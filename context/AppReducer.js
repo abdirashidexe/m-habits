@@ -1,8 +1,10 @@
+import { nowIso } from '../utils/now';
+
 /**
  * @typedef {Object} Habit
  * @property {string} id
  * @property {string} name
- * @property {'quran' | 'athkar' | 'custom'} type
+ * @property {'quran' | 'custom'} type
  * @property {'daily' | 'specific_days'} frequency
  * @property {number[]} specificDays
  * @property {boolean} reminderEnabled
@@ -20,22 +22,9 @@
  */
 
 /**
- * @typedef {Object} AthkarSession
- * @property {'morning' | 'evening' | 'night'} type
- * @property {string} date
- * @property {boolean} completed
- * @property {string | null} completedAt
- */
-
-/**
  * @typedef {Object} QuranLog
  * @property {string} date
- * @property {number} pagesRead
- * @property {string} surahFrom
- * @property {number} ayahFrom
- * @property {string} surahTo
- * @property {number} ayahTo
- * @property {string} notes
+ * @property {true} completed
  */
 
 /**
@@ -45,17 +34,18 @@
  * @property {string | null} premiumSince
  * @property {string} joinedAt
  * @property {string} timezone
+ * @property {number} quranDailyGoal
  */
 
 /**
  * @typedef {Object} AppState
  * @property {Habit[]} habits
  * @property {HabitLog[]} habitLogs
- * @property {AthkarSession[]} athkarSessions
  * @property {QuranLog[]} quranLogs
  * @property {UserProfile} userProfile
  * @property {boolean} onboarded
  * @property {boolean} masterNotificationsEnabled
+ * @property {string | null} devDateOverride
  * @property {boolean} hydrated
  */
 
@@ -66,17 +56,18 @@ export const defaultUserProfile = {
   premiumSince: null,
   joinedAt: '',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+  quranDailyGoal: 1,
 };
 
 /** @type {AppState} */
 export const initialState = {
   habits: [],
   habitLogs: [],
-  athkarSessions: [],
   quranLogs: [],
   userProfile: { ...defaultUserProfile },
   onboarded: false,
   masterNotificationsEnabled: true,
+  devDateOverride: null,
   hydrated: false,
 };
 
@@ -84,16 +75,16 @@ export const ActionTypes = {
   HYDRATE: 'HYDRATE',
   SET_ONBOARDED: 'SET_ONBOARDED',
   SET_USER_NAME: 'SET_USER_NAME',
+  SET_QURAN_DAILY_GOAL: 'SET_QURAN_DAILY_GOAL',
   SET_PREMIUM: 'SET_PREMIUM',
   SET_MASTER_NOTIFICATIONS: 'SET_MASTER_NOTIFICATIONS',
+  SET_DEV_DATE_OVERRIDE: 'SET_DEV_DATE_OVERRIDE',
   SET_HABITS: 'SET_HABITS',
   ADD_HABIT: 'ADD_HABIT',
   UPDATE_HABIT: 'UPDATE_HABIT',
   DELETE_HABIT: 'DELETE_HABIT',
   SET_HABIT_LOGS: 'SET_HABIT_LOGS',
   TOGGLE_HABIT_LOG: 'TOGGLE_HABIT_LOG',
-  SET_ATHKAR_SESSIONS: 'SET_ATHKAR_SESSIONS',
-  COMPLETE_ATHKAR_SESSION: 'COMPLETE_ATHKAR_SESSION',
   SET_QURAN_LOGS: 'SET_QURAN_LOGS',
   UPSERT_QURAN_LOG: 'UPSERT_QURAN_LOG',
   RESET_ALL: 'RESET_ALL',
@@ -119,13 +110,20 @@ export function appReducer(state, action) {
       };
     }
     case ActionTypes.SET_ONBOARDED: {
-      const ob = Boolean(action.payload);
+      const ob =
+        typeof action.payload === 'object' && action.payload
+          ? Boolean(action.payload.onboarded)
+          : Boolean(action.payload);
+      const iso =
+        typeof action.payload === 'object' && action.payload && typeof action.payload.nowIso === 'string'
+          ? action.payload.nowIso
+          : nowIso();
       return {
         ...state,
         onboarded: ob,
         userProfile:
           ob && !state.userProfile.joinedAt
-            ? { ...state.userProfile, joinedAt: new Date().toISOString() }
+            ? { ...state.userProfile, joinedAt: iso }
             : state.userProfile,
       };
     }
@@ -137,6 +135,17 @@ export function appReducer(state, action) {
           name: String(action.payload || ''),
         },
       };
+    case ActionTypes.SET_QURAN_DAILY_GOAL: {
+      const n = Number(action.payload);
+      const g = Number.isFinite(n) ? Math.min(604, Math.max(1, Math.floor(n))) : 1;
+      return {
+        ...state,
+        userProfile: {
+          ...state.userProfile,
+          quranDailyGoal: g,
+        },
+      };
+    }
     case ActionTypes.SET_PREMIUM: {
       const on = Boolean(action.payload);
       return {
@@ -144,12 +153,16 @@ export function appReducer(state, action) {
         userProfile: {
           ...state.userProfile,
           isPremium: on,
-          premiumSince: on ? state.userProfile.premiumSince || new Date().toISOString() : null,
+          premiumSince: on
+            ? state.userProfile.premiumSince || nowIso()
+            : null,
         },
       };
     }
     case ActionTypes.SET_MASTER_NOTIFICATIONS:
       return { ...state, masterNotificationsEnabled: Boolean(action.payload) };
+    case ActionTypes.SET_DEV_DATE_OVERRIDE:
+      return { ...state, devDateOverride: action.payload ? String(action.payload) : null };
     case ActionTypes.SET_HABITS:
       return { ...state, habits: Array.isArray(action.payload) ? action.payload : [] };
     case ActionTypes.ADD_HABIT:
@@ -171,51 +184,26 @@ export function appReducer(state, action) {
     case ActionTypes.SET_HABIT_LOGS:
       return { ...state, habitLogs: Array.isArray(action.payload) ? action.payload : [] };
     case ActionTypes.TOGGLE_HABIT_LOG: {
-      /** @type {{ habitId: string, date: string, completed: boolean }} */
-      const { habitId, date, completed } = action.payload;
+      /** @type {{ habitId: string, date: string, completed: boolean, nowIso?: string }} */
+      const { habitId, date, completed, nowIso: isoRaw } = action.payload;
+      const iso = typeof isoRaw === 'string' ? isoRaw : nowIso();
       const idx = state.habitLogs.findIndex((l) => l.habitId === habitId && l.date === date);
       const next = [...state.habitLogs];
       if (idx >= 0) {
         next[idx] = {
           ...next[idx],
           completed,
-          completedAt: completed ? new Date().toISOString() : null,
+          completedAt: completed ? iso : null,
         };
       } else {
         next.push({
           habitId,
           date,
           completed,
-          completedAt: completed ? new Date().toISOString() : null,
+          completedAt: completed ? iso : null,
         });
       }
       return { ...state, habitLogs: next };
-    }
-    case ActionTypes.SET_ATHKAR_SESSIONS:
-      return {
-        ...state,
-        athkarSessions: Array.isArray(action.payload) ? action.payload : [],
-      };
-    case ActionTypes.COMPLETE_ATHKAR_SESSION: {
-      /** @type {{ type: 'morning'|'evening'|'night', date: string }} */
-      const { type, date } = action.payload;
-      const idx = state.athkarSessions.findIndex((s) => s.type === type && s.date === date);
-      const next = [...state.athkarSessions];
-      if (idx >= 0) {
-        next[idx] = {
-          ...next[idx],
-          completed: true,
-          completedAt: new Date().toISOString(),
-        };
-      } else {
-        next.push({
-          type,
-          date,
-          completed: true,
-          completedAt: new Date().toISOString(),
-        });
-      }
-      return { ...state, athkarSessions: next };
     }
     case ActionTypes.SET_QURAN_LOGS:
       return { ...state, quranLogs: Array.isArray(action.payload) ? action.payload : [] };
@@ -224,8 +212,9 @@ export function appReducer(state, action) {
       const log = action.payload;
       const idx = state.quranLogs.findIndex((q) => q.date === log.date);
       const next = [...state.quranLogs];
-      if (idx >= 0) next[idx] = log;
-      else next.push(log);
+      const entry = { date: log.date, completed: true };
+      if (idx >= 0) next[idx] = entry;
+      else next.push(entry);
       return { ...state, quranLogs: next };
     }
     case ActionTypes.RESET_ALL:

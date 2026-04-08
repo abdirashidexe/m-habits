@@ -1,12 +1,21 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { startOfWeek, addDays, isSameDay, startOfDay, isBefore, isAfter } from 'date-fns';
+import {
+  startOfWeek,
+  addDays,
+  isSameDay,
+  startOfDay,
+  isBefore,
+  isAfter,
+  parseISO,
+  isValid,
+  differenceInCalendarDays,
+} from 'date-fns';
 
 import { useApp } from '../../context/AppContext';
 import { ProgressBar } from '../../components/ProgressBar';
-import { PremiumBadge } from '../../components/PremiumBadge';
 import { colors, typography, spacing, radii, shadows } from '../../theme';
 import {
   isHabitDueOnDate,
@@ -14,18 +23,24 @@ import {
   longestDailyStreakFromPredicate,
   calculateQuranStreakState,
 } from '../../utils/streak';
-import { toLocalDateString, eachDayInclusive } from '../../utils/dates';
+import { toLocalDateString } from '../../utils/dates';
+import { now } from '../../utils/now';
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+/** @param {{ date: string, completed: true }[]} logs */
+function quranLogsForStreak(logs) {
+  return logs.map((q) => ({ ...q, pagesRead: q.completed ? 1 : 0 }));
+}
 
 export default function StatsScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useApp();
   const premium = state.userProfile.isPremium;
-  const [today, setToday] = useState(() => new Date());
+  const [today, setToday] = useState(() => now());
   useFocusEffect(
     useCallback(() => {
-      setToday(new Date());
+      setToday(now());
     }, [])
   );
 
@@ -41,18 +56,12 @@ export default function StatsScreen() {
     }));
     const qLong = longestDailyStreakFromPredicate((ds) => {
       const log = state.quranLogs.find((q) => q.date === ds);
-      return Boolean(log && log.pagesRead >= 1);
+      return Boolean(log?.completed);
     }, today);
-    rows.push({ name: 'Quran reading', longest: qLong });
-    const datesDone = new Set();
-    for (const s of state.athkarSessions) {
-      if (s.completed) datesDone.add(s.date);
-    }
-    const aLong = longestDailyStreakFromPredicate((ds) => datesDone.has(ds), today);
-    rows.push({ name: 'Athkar (any session)', longest: aLong });
+    rows.push({ name: 'Quran', longest: qLong });
     rows.sort((a, b) => b.longest - a.longest);
     return rows.slice(0, 3);
-  }, [customHabits, state.habitLogs, state.quranLogs, state.athkarSessions, today]);
+  }, [customHabits, state.habitLogs, state.quranLogs, today]);
 
   const weekStart = startOfWeek(today, { weekStartsOn: 0 });
   const weekDays = useMemo(() => [...Array(7)].map((_, i) => addDays(weekStart, i)), [weekStart]);
@@ -81,32 +90,32 @@ export default function StatsScreen() {
     });
   }, [weekDays, customHabits, state.habitLogs, today]);
 
-  const totalPages = state.quranLogs.reduce((s, q) => s + (q.pagesRead || 0), 0);
-  const activeDays = state.quranLogs.filter((q) => q.pagesRead >= 1).length;
-  const avgPages = activeDays > 0 ? totalPages / activeDays : 0;
-  const qStreak = calculateQuranStreakState(state.quranLogs, today);
+  const quranStreakLogs = useMemo(
+    () => quranLogsForStreak(state.quranLogs),
+    [state.quranLogs]
+  );
+  const qCurrent = calculateQuranStreakState(quranStreakLogs, today);
+  const qLongestEver = longestDailyStreakFromPredicate((ds) => {
+    const log = state.quranLogs.find((q) => q.date === ds);
+    return Boolean(log?.completed);
+  }, today);
 
-  const athkar30 = useMemo(() => {
-    const start = addDays(today, -29);
-    const days = eachDayInclusive(start, today);
-    let hit = 0;
-    for (const d of days) {
-      const ds = toLocalDateString(d);
-      const any = state.athkarSessions.some((s) => s.date === ds && s.completed);
-      if (any) hit += 1;
+  const totalDaysCompleted = state.quranLogs.filter((q) => q.completed).length;
+
+  const joinedAt = state.userProfile.joinedAt;
+  const daysSinceJoining = useMemo(() => {
+    if (!joinedAt || !isValid(parseISO(joinedAt))) {
+      return Math.max(1, 1);
     }
-    return days.length > 0 ? hit / days.length : 0;
-  }, [state.athkarSessions, today]);
+    const j = startOfDay(parseISO(joinedAt));
+    const t = startOfDay(today);
+    return Math.max(1, differenceInCalendarDays(t, j) + 1);
+  }, [joinedAt, today]);
+
+  const consistencyPct =
+    daysSinceJoining > 0 ? Math.min(100, (totalDaysCompleted / daysSinceJoining) * 100) : 0;
 
   const medals = ['🥇', '🥈', '🥉'];
-
-  const upgrade = () => {
-    Alert.alert(
-      'Nur Premium',
-      'Unlock full stats history including 30-day Athkar consistency insights.',
-      [{ text: 'OK' }]
-    );
-  };
 
   return (
     <ScrollView
@@ -167,36 +176,22 @@ export default function StatsScreen() {
         ) : null}
       </View>
 
-      <Text style={[typography.heading, styles.section]}>Quran progress</Text>
+      <Text style={[typography.heading, styles.section]}>Quran</Text>
       <View style={[styles.card, shadows.card]}>
-        <Text style={[typography.body, styles.line]}>Total pages logged (all time): {totalPages}</Text>
         <Text style={[typography.body, styles.line]}>
-          Average pages per active day: {avgPages.toFixed(1)}
+          Current Quran streak: {qCurrent.currentStreak} day{qCurrent.currentStreak === 1 ? '' : 's'}
         </Text>
         <Text style={[typography.body, styles.line]}>
-          Current Quran streak: {qStreak.currentStreak} day{qStreak.currentStreak === 1 ? '' : 's'}
+          Longest Quran streak ever: {qLongestEver} day{qLongestEver === 1 ? '' : 's'}
         </Text>
-      </View>
-
-      <Text style={[typography.heading, styles.section]}>Athkar consistency</Text>
-      <View style={[styles.card, shadows.card, !premium && styles.lockedCard]}>
-        {!premium ? (
-          <Pressable onPress={upgrade} style={styles.lockPress}>
-            <PremiumBadge style={styles.badge} />
-            <Text style={[typography.body, styles.lockTxt]}>
-              30-day consistency (Premium) — tap to learn more
-            </Text>
-            <ProgressBar progress={0} style={styles.barDim} />
-          </Pressable>
-        ) : (
-          <>
-            <Text style={[typography.body, styles.line]}>
-              Last 30 days: {Math.round(athkar30 * 100)}% of days with at least one Athkar session
-              completed
-            </Text>
-            <ProgressBar progress={athkar30} style={styles.bar} />
-          </>
-        )}
+        <Text style={[typography.body, styles.line]}>
+          Total days completed (all time): {totalDaysCompleted}
+        </Text>
+        <Text style={[typography.body, styles.line]}>
+          Consistency (completed days ÷ days since joining)
+        </Text>
+        <ProgressBar progress={consistencyPct / 100} style={styles.bar} />
+        <Text style={[typography.caption, styles.pctLbl]}>{consistencyPct.toFixed(0)}%</Text>
       </View>
 
       <View style={{ height: spacing.xxl }} />
@@ -309,24 +304,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     lineHeight: 22,
   },
-  lockedCard: {
-    borderColor: colors.premiumGold,
-  },
-  lockPress: {
-    width: '100%',
-  },
-  badge: {
-    marginBottom: spacing.sm,
-  },
-  lockTxt: {
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
   bar: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
-  barDim: {
-    marginTop: spacing.sm,
-    opacity: 0.4,
+  pctLbl: {
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
 });

@@ -64,7 +64,7 @@ export function HabitCard({ name, streak, atRisk, completed, onToggle }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
+    borderRadius: radii.xl,
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderWidth: 1,
@@ -102,9 +102,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   check: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
+    width: 46,
+    height: 46,
+    borderRadius: radii.lg,
     borderWidth: 2,
     borderColor: colors.divider,
     alignItems: 'center',

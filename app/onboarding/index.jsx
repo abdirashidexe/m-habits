@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useApp, ActionTypes, runPostOnboardingNotificationSetup } from '../../context/AppContext';
 import { Button } from '../../components/Button';
 import { colors, typography, spacing, radii } from '../../theme';
+import { nowIso } from '../../utils/now';
 
 function MoonIllustration() {
   return (
@@ -17,17 +18,29 @@ function MoonIllustration() {
   );
 }
 
+function parseGoal(raw) {
+  const n = parseInt(String(raw).replace(/[^\d]/g, ''), 10);
+  if (!Number.isFinite(n)) return null;
+  if (n < 1 || n > 604) return null;
+  return n;
+}
+
 export default function OnboardingScreen() {
   const router = useRouter();
   const { dispatch } = useApp();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
+  const [goalInput, setGoalInput] = useState('1');
+
+  const goalNum = parseGoal(goalInput);
+  const goalValid = goalNum !== null;
 
   const finish = async () => {
     const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!trimmed || !goalValid || goalNum === null) return;
     dispatch({ type: ActionTypes.SET_USER_NAME, payload: trimmed });
-    dispatch({ type: ActionTypes.SET_ONBOARDED, payload: true });
+    dispatch({ type: ActionTypes.SET_QURAN_DAILY_GOAL, payload: goalNum });
+    dispatch({ type: ActionTypes.SET_ONBOARDED, payload: { onboarded: true, nowIso: nowIso() } });
     await runPostOnboardingNotificationSetup();
     router.replace('/(tabs)');
   };
@@ -52,8 +65,8 @@ export default function OnboardingScreen() {
         <View style={styles.slide}>
           <Text style={[typography.displayMedium, styles.heading]}>Track what matters</Text>
           <Text style={[typography.body, styles.body]}>
-            Nur brings together three pillars: Quran reading you log with care, Athkar sessions for
-            morning, evening, and night, and habits you shape for your own path.
+            Nur helps you stay close to the Quran with a daily reading goal and build habits you
+            shape for your own path.
           </Text>
           <Button title="Continue" onPress={() => setStep(2)} style={styles.btn} />
         </View>
@@ -72,11 +85,31 @@ export default function OnboardingScreen() {
             autoFocus
           />
           <Button
-            title="Get Started"
-            onPress={finish}
+            title="Continue"
+            onPress={() => setStep(3)}
             disabled={!name.trim()}
             style={styles.btn}
           />
+        </View>
+      ) : null}
+
+      {step === 3 ? (
+        <View style={styles.slide}>
+          <Text style={[typography.heading, styles.q]}>
+            How many pages of Quran do you want to read daily?
+          </Text>
+          <TextInput
+            value={goalInput}
+            onChangeText={setGoalInput}
+            placeholder="1"
+            placeholderTextColor={colors.textMuted}
+            style={[typography.body, styles.input]}
+            keyboardType="number-pad"
+            maxLength={3}
+            autoFocus
+          />
+          <Text style={[typography.caption, styles.hint]}>Between 1 and 604 pages per day.</Text>
+          <Button title="Get Started" onPress={finish} disabled={!goalValid} style={styles.btn} />
         </View>
       ) : null}
     </KeyboardAvoidingView>
@@ -166,7 +199,11 @@ const styles = StyleSheet.create({
     borderColor: colors.divider,
     padding: spacing.md,
     color: colors.textPrimary,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  hint: {
+    color: colors.textMuted,
+    marginBottom: spacing.md,
   },
   btn: {
     marginTop: spacing.md,

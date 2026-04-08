@@ -35,6 +35,10 @@ export default function HabitsScreen() {
     [state.habits]
   );
 
+  const openQuranEdit = () => {
+    router.push('/modals/quran-goal');
+  };
+
   const openAdd = () => {
     if (!premium && customHabits.length >= 3) {
       Alert.alert(
@@ -78,20 +82,40 @@ export default function HabitsScreen() {
       <Text style={[typography.displayMedium, styles.title]}>Habits</Text>
       <Text style={[typography.body, styles.sub]}>Build rhythms that stay with you.</Text>
 
-      {customHabits.length === 0 ? (
-        <View style={styles.emptyWrap}>
-          <EmptyState
-            title="No habits yet"
-            message="Tap the + button to create your first habit. Small steps, blessed consistency."
-          />
-          <Text style={[typography.caption, styles.arrow]}>↓</Text>
+      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <View style={[styles.row, shadows.card, styles.rowQuran]}>
+          <View style={styles.rowMain}>
+            <View style={styles.rowTop}>
+              <Text style={[typography.subheading, styles.name]}>Quran</Text>
+            </View>
+            <Text style={[typography.caption, styles.meta]}>
+              {state.userProfile.quranDailyGoal ?? 1} page
+              {(state.userProfile.quranDailyGoal ?? 1) === 1 ? '' : 's'}/day
+            </Text>
+            <Text style={[typography.caption, styles.streak]}>Permanent habit</Text>
+          </View>
+          <View style={styles.actions}>
+            <Pressable
+              onPress={openQuranEdit}
+              style={styles.iconBtn}
+              accessibilityLabel="Edit Quran goal"
+            >
+              <Text style={styles.icon}>✎</Text>
+            </Pressable>
+          </View>
         </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-        >
-          {customHabits.map((h, index) => {
+
+        {customHabits.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <EmptyState
+              title="No habits yet"
+              message="Tap the + button to create your first habit. Small steps, blessed consistency."
+            />
+            <Text style={[typography.caption, styles.arrow]}>↓</Text>
+          </View>
+        ) : null}
+
+        {customHabits.map((h, index) => {
             const locked = !premium && index >= 3;
             const streak = calculateStreak(h.id, state.habitLogs, h);
             const longest = longestStreakEverForHabit(h.id, h, state.habitLogs);
@@ -138,8 +162,7 @@ export default function HabitsScreen() {
               </RowWrap>
             );
           })}
-        </ScrollView>
-      )}
+      </ScrollView>
 
       <Pressable style={[styles.fab, shadows.modal]} onPress={openAdd} accessibilityLabel="Add habit">
         <Text style={[typography.displayMedium, styles.fabPlus]}>+</Text>
@@ -179,7 +202,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
+    borderRadius: radii.xl,
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderWidth: 1,
@@ -189,6 +212,10 @@ const styles = StyleSheet.create({
   rowLocked: {
     borderColor: colors.premiumGold,
     opacity: 0.85,
+  },
+  rowQuran: {
+    borderColor: colors.primaryLight,
+    borderWidth: 2,
   },
   rowMain: {
     flex: 1,
@@ -233,7 +260,7 @@ const styles = StyleSheet.create({
     bottom: spacing.xl,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 999,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

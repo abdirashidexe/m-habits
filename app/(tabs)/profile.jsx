@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   Alert,
   Switch,
   TextInput,
-  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,8 +37,6 @@ export default function ProfileScreen() {
   const [nameDraft, setNameDraft] = useState(state.userProfile.name);
   const tapCount = useRef(0);
   const tapTimer = useRef(null);
-  const [toast, setToast] = useState('');
-  const toastOp = useRef(new Animated.Value(0)).current;
 
   const version = Constants.expoConfig?.version || '1.0.0';
   const premium = state.userProfile.isPremium;
@@ -53,23 +50,10 @@ export default function ProfileScreen() {
   const overallLongest = overallLongestStreakRecord(
     state.habits.filter((h) => h.type === 'custom'),
     state.habitLogs,
-    state.quranLogs,
-    state.athkarSessions
+    state.quranLogs.map((q) => ({ ...q, pagesRead: q.completed ? 1 : 0 }))
   );
 
   const initial = (state.userProfile.name || '?').trim().charAt(0).toUpperCase();
-
-  const showDevToast = useCallback((msg) => {
-    setToast(msg);
-    toastOp.setValue(0);
-    Animated.sequence([
-      Animated.timing(toastOp, { toValue: 1, duration: 180, useNativeDriver: true }),
-      Animated.delay(2200),
-      Animated.timing(toastOp, { toValue: 0, duration: 220, useNativeDriver: true }),
-    ]).start(() => {
-      setToast('');
-    });
-  }, [toastOp]);
 
   const onVersionPress = () => {
     tapCount.current += 1;
@@ -79,8 +63,7 @@ export default function ProfileScreen() {
     }, 900);
     if (tapCount.current >= 7) {
       tapCount.current = 0;
-      dispatch({ type: ActionTypes.SET_PREMIUM, payload: true });
-      showDevToast('Dev mode: Premium unlocked.');
+      router.push('/modals/dev-tools');
     }
   };
 
@@ -217,7 +200,7 @@ export default function ProfileScreen() {
             <Text style={[typography.caption, styles.ver]}>Version {version}</Text>
           </Pressable>
           <Text style={[typography.bodySmall, styles.aboutTxt]}>
-            Nur is a calm companion for Quran, Athkar, and daily habits — designed to help you show up
+            Nur is a calm companion for Quran and daily habits — designed to help you show up
             with sincerity, offline and in your own rhythm.
           </Text>
           <Pressable onPress={privacy}>
@@ -228,26 +211,6 @@ export default function ProfileScreen() {
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
 
-      {toast ? (
-        <Animated.View
-          style={[
-            styles.toast,
-            {
-              opacity: toastOp,
-              transform: [
-                {
-                  translateY: toastOp.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [12, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Text style={[typography.caption, styles.toastTxt]}>{toast}</Text>
-        </Animated.View>
-      ) : null}
     </View>
   );
 }
@@ -404,18 +367,5 @@ const styles = StyleSheet.create({
   link: {
     color: colors.primary,
     textDecorationLine: 'underline',
-  },
-  toast: {
-    position: 'absolute',
-    bottom: spacing.xl,
-    left: spacing.lg,
-    right: spacing.lg,
-    backgroundColor: colors.textPrimary,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    alignItems: 'center',
-  },
-  toastTxt: {
-    color: colors.background,
   },
 });

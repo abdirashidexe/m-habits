@@ -1,5 +1,6 @@
 import { startOfDay, subDays, isBefore, isAfter, parseISO, isValid } from 'date-fns';
 import { getDayIndex, toLocalDateString, eachDayInclusive, parseYmd } from './dates';
+import { now } from './now';
 
 /**
  * @typedef {{ id: string, name: string, frequency: string, specificDays: number[], createdAt: string }} Habit
@@ -35,7 +36,7 @@ function isCompletedOnDate(habitId, dateStr, logs) {
  * @param {Date} [refDate]
  * @returns {{ currentStreak: number, longestStreak: number, completedToday: boolean, dueToday: boolean, atRisk: boolean }}
  */
-export function calculateStreak(habitId, logs, habit, refDate = new Date()) {
+export function calculateStreak(habitId, logs, habit, refDate = now()) {
   const today = startOfDay(refDate);
   const todayStr = toLocalDateString(today);
 
@@ -110,7 +111,7 @@ export function calculateStreak(habitId, logs, habit, refDate = new Date()) {
  * @param {HabitLog[]} logs
  * @returns {number}
  */
-export function longestStreakEverForHabit(habitId, habit, logs) {
+export function longestStreakEverForHabit(habitId, habit, logs, refDate = now()) {
   const habitLogs = logs.filter((l) => l.habitId === habitId);
   if (habitLogs.length === 0) return 0;
 
@@ -121,7 +122,7 @@ export function longestStreakEverForHabit(habitId, habit, logs) {
     if (isBefore(t, c)) minD = l.date;
   }
 
-  const maxD = toLocalDateString(new Date());
+  const maxD = toLocalDateString(refDate);
   const days = eachDayInclusive(parseYmd(minD), parseYmd(maxD));
 
   let run = 0;
@@ -145,7 +146,7 @@ export function longestStreakEverForHabit(habitId, habit, logs) {
  */
 function todayStrFromIso(iso) {
   const d = parseISO(iso);
-  if (!isValid(d)) return toLocalDateString(new Date());
+  if (!isValid(d)) return toLocalDateString(now());
   return toLocalDateString(d);
 }
 
@@ -155,7 +156,7 @@ function todayStrFromIso(iso) {
  * @param {Date} [refDate]
  * @returns {{ currentStreak: number, longestStreak: number, completedToday: boolean, dueToday: boolean, atRisk: boolean }}
  */
-export function calculateDailyStreak(isCompletedOnDateStr, refDate = new Date()) {
+export function calculateDailyStreak(isCompletedOnDateStr, refDate = now()) {
   const today = startOfDay(refDate);
   const todayStr = toLocalDateString(today);
   const dueToday = true;
@@ -237,43 +238,12 @@ export function longestDailyStreakFromPredicate(isCompletedOnDateStr, refDate) {
  * @param {QuranLog[]} quranLogs
  * @param {Date} [refDate]
  */
-export function calculateQuranStreakState(quranLogs, refDate = new Date()) {
+export function calculateQuranStreakState(quranLogs, refDate = now()) {
   const byDate = new Map(quranLogs.map((q) => [q.date, q]));
   return calculateDailyStreak((ds) => {
     const log = byDate.get(ds);
     return Boolean(log && log.pagesRead >= 1);
   }, refDate);
-}
-
-/**
- * @typedef {{ type: string, date: string, completed: boolean }} AthkarSession
- * @param {'morning' | 'evening' | 'night'} type
- * @param {AthkarSession[]} sessions
- * @param {Date} [refDate]
- */
-export function calculateAthkarSessionStreakState(type, sessions, refDate = new Date()) {
-  const byDate = new Map();
-  for (const s of sessions) {
-    if (s.type !== type) continue;
-    byDate.set(s.date, s);
-  }
-  return calculateDailyStreak((ds) => {
-    const s = byDate.get(ds);
-    return Boolean(s?.completed);
-  }, refDate);
-}
-
-/**
- * At least one athkar session completed that day.
- * @param {AthkarSession[]} sessions
- * @param {Date} [refDate]
- */
-export function calculateAnyAthkarStreakState(sessions, refDate = new Date()) {
-  const datesDone = new Set();
-  for (const s of sessions) {
-    if (s.completed) datesDone.add(s.date);
-  }
-  return calculateDailyStreak((ds) => datesDone.has(ds), refDate);
 }
 
 /**
@@ -291,25 +261,18 @@ export function maxLongestStreakAcrossHabits(habits, logs) {
 }
 
 /**
- * Overall "longest streak" badge: max among habits, quran longest, any-athkar longest.
+ * Overall "longest streak" badge: max among habits and Quran.
  * @param {Habit[]} habits
  * @param {HabitLog[]} logs
  * @param {QuranLog[]} quranLogs
- * @param {AthkarSession[]} athkarSessions
  */
-export function overallLongestStreakRecord(habits, logs, quranLogs, athkarSessions) {
+export function overallLongestStreakRecord(habits, logs, quranLogs) {
   let m = maxLongestStreakAcrossHabits(habits, logs);
   const qLong = longestDailyStreakFromPredicate((ds) => {
     const log = quranLogs.find((q) => q.date === ds);
     return Boolean(log && log.pagesRead >= 1);
-  }, new Date());
+  }, now());
   if (qLong > m) m = qLong;
-  const datesDone = new Set();
-  for (const s of athkarSessions) {
-    if (s.completed) datesDone.add(s.date);
-  }
-  const aLong = longestDailyStreakFromPredicate((ds) => datesDone.has(ds), new Date());
-  if (aLong > m) m = aLong;
   return m;
 }
 
@@ -318,7 +281,7 @@ export function overallLongestStreakRecord(habits, logs, quranLogs, athkarSessio
  * @param {Date} ref
  * @returns {boolean}
  */
-export function isDateInFutureYmd(ymd, ref = new Date()) {
+export function isDateInFutureYmd(ymd, ref = now()) {
   const d = parseYmd(ymd);
   return isAfter(startOfDay(d), startOfDay(ref));
 }

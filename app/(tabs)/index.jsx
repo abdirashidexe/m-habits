@@ -1,12 +1,12 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 
 import { useApp, ActionTypes } from '../../context/AppContext';
 import { HabitCard } from '../../components/HabitCard';
-import { Button } from '../../components/Button';
 import { colors, typography, spacing, radii, shadows } from '../../theme';
 import {
   formatDateDisplay,
@@ -14,28 +14,30 @@ import {
   toLocalDateString,
   getDayOfYear,
 } from '../../utils/dates';
-import {
-  calculateStreak,
-  isHabitDueOnDate,
-  calculateQuranStreakState,
-} from '../../utils/streak';
+import { calculateStreak, isHabitDueOnDate, calculateQuranStreakState } from '../../utils/streak';
 import { quoteForDay } from '../../constants/motivation';
+import { now, nowIso } from '../../utils/now';
 
-function greetingPeriod() {
-  const h = new Date().getHours();
+function greetingPeriod(date) {
+  const h = date.getHours();
   if (h < 12) return 'morning';
   if (h < 17) return 'afternoon';
   return 'evening';
+}
+
+/** @param {{ date: string, completed: true }[]} logs */
+function quranLogsForStreak(logs) {
+  return logs.map((q) => ({ ...q, pagesRead: q.completed ? 1 : 0 }));
 }
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, dispatch } = useApp();
-  const [today, setToday] = useState(() => new Date());
+  const [today, setToday] = useState(() => now());
   useFocusEffect(
     useCallback(() => {
-      setToday(new Date());
+      setToday(now());
     }, [])
   );
   const todayStr = toLocalDateString(today);
@@ -50,37 +52,56 @@ export default function HomeScreen() {
     [customHabits, today]
   );
 
+  const quranStreakLogs = useMemo(() => quranLogsForStreak(state.quranLogs), [state.quranLogs]);
+  const qStreak = calculateQuranStreakState(quranStreakLogs, today);
+  const quranDoneToday = Boolean(state.quranLogs.some((q) => q.date === todayStr && q.completed));
+
   const stats = useMemo(() => {
-    let completed = 0;
-    let activeStreaks = 0;
+    let completed = quranDoneToday ? 1 : 0;
+    let activeStreaks = qStreak.currentStreak > 0 ? 1 : 0;
     for (const h of dueTodayList) {
       const s = calculateStreak(h.id, state.habitLogs, h, today);
       if (s.completedToday) completed += 1;
       if (s.currentStreak > 0) activeStreaks += 1;
     }
     return {
-      due: dueTodayList.length,
+      due: dueTodayList.length + 1,
       completed,
       activeStreaks,
     };
-  }, [dueTodayList, state.habitLogs, today]);
-
-  const quranToday = state.quranLogs.find((q) => q.date === todayStr);
-  const qPages = quranToday?.pagesRead ?? 0;
-  const qStreak = calculateQuranStreakState(state.quranLogs, today);
-
-  const sessionDone = (type) => {
-    const s = state.athkarSessions.find((x) => x.type === type && x.date === todayStr);
-    return Boolean(s?.completed);
-  };
+  }, [dueTodayList, quranDoneToday, qStreak.currentStreak, state.habitLogs, today]);
 
   const initial = (state.userProfile.name || '?').trim().charAt(0).toUpperCase();
 
   const toggleHabit = (habitId, completed) => {
     dispatch({
       type: ActionTypes.TOGGLE_HABIT_LOG,
-      payload: { habitId, date: todayStr, completed: !completed },
+      payload: { habitId, date: todayStr, completed: !completed, nowIso: nowIso() },
     });
+  };
+
+  const markQuranComplete = () => {
+    if (!quranDoneToday) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      dispatch({
+        type: ActionTypes.UPSERT_QURAN_LOG,
+        payload: { date: todayStr, completed: true },
+      });
+      return;
+    }
+    Alert.alert('Undo Quran completion?', 'Remove today as completed?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Undo',
+        style: 'destructive',
+        onPress: () => {
+          dispatch({
+            type: ActionTypes.SET_QURAN_LOGS,
+            payload: state.quranLogs.filter((q) => q.date !== todayStr),
+          });
+        },
+      },
+    ]);
   };
 
   const quote = quoteForDay(getDayOfYear(today));
@@ -95,7 +116,7 @@ export default function HomeScreen() {
         <View style={styles.headerLeft}>
           <Text style={[typography.subheading, styles.salam]}>السلام عليكم</Text>
           <Text style={[typography.body, styles.greet]}>
-            Good {greetingPeriod()}, {state.userProfile.name || 'friend'}
+            Good {greetingPeriod(today)}, {state.userProfile.name || 'friend'}
           </Text>
         </View>
         <Pressable
@@ -131,6 +152,13 @@ export default function HomeScreen() {
       {dueTodayList.length === 0 ? (
         <Text style={[typography.body, styles.emptyH]}>No custom habits due today.</Text>
       ) : null}
+      <HabitCard
+        name="Quran"
+        streak={qStreak.currentStreak}
+        atRisk={qStreak.atRisk && !quranDoneToday}
+        completed={quranDoneToday}
+        onToggle={markQuranComplete}
+      />
       {dueTodayList.map((h) => {
         const s = calculateStreak(h.id, state.habitLogs, h, today);
         const log = state.habitLogs.find((l) => l.habitId === h.id && l.date === todayStr);
@@ -146,50 +174,6 @@ export default function HomeScreen() {
           />
         );
       })}
-
-      <Text style={[typography.heading, styles.sectionTitle]}>Quran reading</Text>
-      <View style={[styles.block, shadows.card]}>
-        <Text style={[typography.body, styles.blockTxt]}>
-          Today: {qPages} page{qPages === 1 ? '' : 's'} logged · Streak {qStreak.currentStreak} days
-        </Text>
-        <Button
-          title="+ Log Reading"
-          variant="secondary"
-          onPress={() => router.push('/modals/log-quran')}
-          style={styles.blockBtn}
-        />
-      </View>
-
-      <Text style={[typography.heading, styles.sectionTitle]}>Athkar</Text>
-      <View style={styles.athkarRow}>
-        <Pressable
-          style={[styles.athPill, sessionDone('morning') && styles.athPillDone]}
-          onPress={() => router.push({ pathname: '/modals/athkar', params: { type: 'morning' } })}
-        >
-          <Text style={[typography.caption, styles.athTxt]}>Morning</Text>
-          <Text style={[typography.label, styles.athState]}>
-            {sessionDone('morning') ? 'Done' : 'Open'}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.athPill, sessionDone('evening') && styles.athPillDone]}
-          onPress={() => router.push({ pathname: '/modals/athkar', params: { type: 'evening' } })}
-        >
-          <Text style={[typography.caption, styles.athTxt]}>Evening</Text>
-          <Text style={[typography.label, styles.athState]}>
-            {sessionDone('evening') ? 'Done' : 'Open'}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.athPill, sessionDone('night') && styles.athPillDone]}
-          onPress={() => router.push({ pathname: '/modals/athkar', params: { type: 'night' } })}
-        >
-          <Text style={[typography.caption, styles.athTxt]}>Night</Text>
-          <Text style={[typography.label, styles.athState]}>
-            {sessionDone('night') ? 'Done' : 'Open'}
-          </Text>
-        </Pressable>
-      </View>
 
       <View style={styles.footer}>
         <Text style={[typography.bodySmall, styles.quote]}>{quote}</Text>
@@ -241,7 +225,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
+    borderRadius: radii.xl,
     padding: spacing.md,
     marginBottom: spacing.lg,
     borderWidth: 1,
@@ -284,53 +268,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.md,
   },
-  block: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    marginBottom: spacing.md,
-  },
-  blockTxt: {
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  blockBtn: {
-    alignSelf: 'flex-start',
-  },
-  athkarRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  athPill: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-  },
-  athPillDone: {
-    borderColor: colors.primary,
-    backgroundColor: colors.surfaceElevated,
-  },
-  athTxt: {
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  athState: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
   footer: {
     padding: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.divider,
+    marginTop: spacing.md,
   },
   quote: {
     color: colors.textSecondary,

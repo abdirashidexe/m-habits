@@ -19,3 +19,4 @@ export function quoteForDay(dayOfYear) {
   const i = Math.abs(dayOfYear) % MOTIVATIONAL_QUOTES.length;
   return MOTIVATIONAL_QUOTES[i];
 }
+

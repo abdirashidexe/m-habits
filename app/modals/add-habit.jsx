@@ -20,6 +20,7 @@ import { DayPicker } from '../../components/DayPicker';
 import { colors, typography, spacing, radii } from '../../theme';
 import { createUuid } from '../../utils/uuid';
 import { scheduleHabitReminder, cancelHabitReminder } from '../../utils/notifications';
+import { nowIso } from '../../utils/now';
 
 export default function AddHabitModal() {
   const insets = useSafeAreaInsets();
@@ -88,7 +89,7 @@ export default function AddHabitModal() {
       specificDays: freqDaily ? [] : [...specificDays].sort((a, b) => a - b),
       reminderEnabled: reminderOn,
       reminderTime,
-      createdAt: existing?.createdAt || new Date().toISOString(),
+      createdAt: existing?.createdAt || nowIso(),
       isPremium: false,
     };
 

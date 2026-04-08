@@ -3,11 +3,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const KEYS = {
   habits: 'nur_habits',
   habitLogs: 'nur_habit_logs',
-  athkarSessions: 'nur_athkar_sessions',
   quranLogs: 'nur_quran_logs',
   userProfile: 'nur_user_profile',
   onboarded: 'nur_onboarded',
   masterNotifications: 'nur_master_notifications',
+  devDate: 'nur_dev_date',
 };
 
 /**

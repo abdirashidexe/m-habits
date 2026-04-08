@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: colors.surface,
-    borderRadius: radii.md,
+    borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.divider,
     paddingHorizontal: spacing.md,
