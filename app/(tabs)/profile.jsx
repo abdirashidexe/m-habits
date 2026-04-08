@@ -1,26 +1,26 @@
-import React, { useState, useRef } from 'react';
+import { format, isValid, parseISO } from 'date-fns';
+import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
+import React, { useRef, useState } from 'react';
 import {
-  View,
-  Text,
+  Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
-  Pressable,
-  Alert,
   Switch,
+  Text,
   TextInput,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Constants from 'expo-constants';
-import { format, parseISO, isValid } from 'date-fns';
 
-import { useApp, ActionTypes } from '../../context/AppContext';
-import { PremiumBadge } from '../../components/PremiumBadge';
 import { Button } from '../../components/Button';
-import { colors, typography, spacing, radii, shadows } from '../../theme';
-import { overallLongestStreakRecord } from '../../utils/streak';
-import * as storage from '../../utils/storage';
+import { PremiumBadge } from '../../components/PremiumBadge';
+import { ActionTypes, useApp } from '../../context/AppContext';
+import { colors, radii, shadows, spacing, typography } from '../../theme';
 import { cancelAllLocalNotifications } from '../../utils/notifications';
+import * as storage from '../../utils/storage';
+import { overallLongestStreakRecord } from '../../utils/streak';
 
 const PREMIUM_BENEFITS = [
   'Unlimited custom habits',
@@ -200,7 +200,7 @@ export default function ProfileScreen() {
             <Text style={[typography.caption, styles.ver]}>Version {version}</Text>
           </Pressable>
           <Text style={[typography.bodySmall, styles.aboutTxt]}>
-            Nur is a calm companion for Quran and daily habits — designed to help you show up
+            Nur is a calm companion for Quran and daily habits. It&apos;s designed to help you show up
             with sincerity, offline and in your own rhythm.
           </Text>
           <Pressable onPress={privacy}>
