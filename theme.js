@@ -19,16 +19,17 @@ export const colors = {
   premiumGold: '#C4954A',
 };
 
+
 export const typography = {
-  displayLarge: { fontSize: 28, fontWeight: '700' },
-  displayMedium: { fontSize: 22, fontWeight: '700' },
-  heading: { fontSize: 18, fontWeight: '600' },
-  subheading: { fontSize: 15, fontWeight: '600' },
-  body: { fontSize: 14, fontWeight: '400' },
-  bodySmall: { fontSize: 13, fontWeight: '400' },
-  caption: { fontSize: 12, fontWeight: '400' },
+  displayLarge: { fontFamily: 'Poppins',fontSize: 28+3, fontWeight: '700' },
+  displayMedium: { fontFamily: 'Poppins',fontSize: 22+3, fontWeight: '700' },
+  heading: { fontFamily: 'Poppins',fontSize: 18+3, fontWeight: '600' },
+  subheading: { fontFamily: 'Poppins',fontSize: 15+3, fontWeight: '600' },
+  body: { fontFamily: 'Poppins',fontSize: 14+3, fontWeight: '400' },
+  bodySmall: { fontFamily: 'Poppins',fontSize: 13+3, fontWeight: '400' },
+  caption: { fontFamily: 'Poppins',fontSize: 12+2, fontWeight: '400' },
   label: {
-    fontSize: 11,
+    fontFamily: 'Poppins',fontSize: 11+3,
     fontWeight: '600',
     letterSpacing: 0.8,
   },

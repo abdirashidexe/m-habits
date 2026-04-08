@@ -11,6 +11,8 @@ export const MOTIVATIONAL_QUOTES = [
   'Allah is with the patient — keep going with sincerity.',
 ];
 
+// “Take on only as much as you can do of good deeds, for the best of deeds is that which is done consistently, even if it is little.”
+
 /**
  * @param {number} dayOfYear 0-365
  * @returns {string}

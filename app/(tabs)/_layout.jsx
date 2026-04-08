@@ -3,6 +3,7 @@ import { Platform, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, typography } from '../../theme';
+import { FaHouse, FaChartSimple, FaUser, FaRocket } from "react-icons/fa6";
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
@@ -28,28 +29,28 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <TabIcon color={color} label="⌂" />,
+          tabBarIcon: ({ color }) => <TabIcon color={color} label={<FaHouse />}/>,
         }}
       />
       <Tabs.Screen
         name="habits"
         options={{
           title: 'Habits',
-          tabBarIcon: ({ color }) => <TabIcon color={color} label="✦" />,
+          tabBarIcon: ({ color }) => <TabIcon color={color} label={<FaRocket />} />,
         }}
       />
       <Tabs.Screen
         name="stats"
         options={{
           title: 'Stats',
-          tabBarIcon: ({ color }) => <TabIcon color={color} label="◉" />,
+          tabBarIcon: ({ color }) => <TabIcon color={color} label={<FaChartSimple />} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <TabIcon color={color} label="○" />,
+          tabBarIcon: ({ color }) => <TabIcon color={color} label={<FaUser />} />,
         }}
       />
     </Tabs>
