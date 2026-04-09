@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextInput, View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing, radii } from '../theme';
+import { useNurTheme } from '../hooks/useNurTheme';
 
 /**
  * @param {{
@@ -26,6 +26,8 @@ export function Input({
   style,
   inputStyle,
 }) {
+  const { colors, typography, spacing, radii } = useNurTheme();
+  const styles = makeStyles({ colors, typography, spacing, radii });
   return (
     <View style={[styles.wrap, style]}>
       {label ? (
@@ -50,7 +52,8 @@ export function Input({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles({ colors, typography, spacing, radii }) {
+  return StyleSheet.create({
   wrap: {
     marginBottom: spacing.sm,
   },
@@ -72,4 +75,5 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-});
+  });
+}

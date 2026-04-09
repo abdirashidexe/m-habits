@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { colors, typography, spacing, radii } from '../theme';
+import { useTranslation } from 'react-i18next';
 
-const LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+import { useNurTheme } from '../hooks/useNurTheme';
 
 /**
  * @param {{
@@ -12,6 +12,23 @@ const LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
  * value: 0=Sun .. 6=Sat
  */
 export function DayPicker({ value, onChange }) {
+  const { t } = useTranslation();
+  const { colors, typography, spacing, radii } = useNurTheme();
+  const styles = useMemo(() => makeStyles({ colors, spacing, radii }), [colors, spacing, radii]);
+
+  const LABELS = useMemo(
+    () => [
+      t('habits.dayShortSun'),
+      t('habits.dayShortMon'),
+      t('habits.dayShortTue'),
+      t('habits.dayShortWed'),
+      t('habits.dayShortThu'),
+      t('habits.dayShortFri'),
+      t('habits.dayShortSat'),
+    ],
+    [t]
+  );
+
   const toggle = (idx) => {
     const has = value.includes(idx);
     if (has) onChange(value.filter((d) => d !== idx));
@@ -40,36 +57,38 @@ export function DayPicker({ value, onChange }) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-  },
-  pill: {
-    flex: 1,
-    minWidth: 36,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-  },
-  pillOn: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
-  },
-  pillPressed: {
-    opacity: 0.85,
-  },
-  txt: {
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  txtOn: {
-    color: colors.background,
-    fontWeight: '700',
-  },
-});
+function makeStyles({ colors, spacing, radii }) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      flexWrap: 'nowrap',
+      justifyContent: 'space-between',
+      gap: spacing.xs,
+    },
+    pill: {
+      flex: 1,
+      minWidth: 36,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: 'center',
+    },
+    pillOn: {
+      backgroundColor: colors.primaryLight,
+      borderColor: colors.primary,
+    },
+    pillPressed: {
+      opacity: 0.85,
+    },
+    txt: {
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    txtOn: {
+      color: colors.background,
+      fontWeight: '700',
+    },
+  });
+}

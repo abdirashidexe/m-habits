@@ -1,22 +1,19 @@
-import React, { useMemo, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 
-import { useApp, ActionTypes } from '../../context/AppContext';
 import { HabitCard } from '../../components/HabitCard';
-import { colors, typography, spacing, radii, shadows } from '../../theme';
-import {
-  formatDateDisplay,
-  formatHijriDisplay,
-  toLocalDateString,
-  getDayOfYear,
-} from '../../utils/dates';
-import { calculateStreak, isHabitDueOnDate, calculateQuranStreakState } from '../../utils/streak';
-import { quoteForDay } from '../../constants/motivation';
+import { HabitCompletionRitual } from '../../components/HabitCompletionRitual';
+import { MOTIVATION_QUOTE_COUNT } from '../../constants/motivation';
+import { ActionTypes, useApp } from '../../context/AppContext';
+import { useNurTheme } from '../../hooks/useNurTheme';
+import { getDateFnsLocale } from '../../utils/dateLocale';
+import { formatDateDisplay, formatHijriDisplay, getDayOfYear, toLocalDateString } from '../../utils/dates';
 import { now, nowIso } from '../../utils/now';
+import { calculateStreak, isHabitDueOnDate } from '../../utils/streak';
 
 function greetingPeriod(date) {
   const h = date.getHours();
@@ -25,15 +22,13 @@ function greetingPeriod(date) {
   return 'evening';
 }
 
-/** @param {{ date: string, completed: true }[]} logs */
-function quranLogsForStreak(logs) {
-  return logs.map((q) => ({ ...q, pagesRead: q.completed ? 1 : 0 }));
-}
-
 export default function HomeScreen() {
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, dispatch } = useApp();
+  const { colors, radii, spacing, typography, shadows } = useNurTheme();
+  const styles = makeStyles({ colors, radii, spacing });
   const [today, setToday] = useState(() => now());
   useFocusEffect(
     useCallback(() => {
@@ -41,6 +36,30 @@ export default function HomeScreen() {
     }, [])
   );
   const todayStr = toLocalDateString(today);
+  const isEvening = greetingPeriod(today) === 'evening';
+  const [timeLeftLabel, setTimeLeftLabel] = useState('');
+
+  const dateLocale = useMemo(
+    () => getDateFnsLocale(state.userProfile.language || 'en'),
+    [state.userProfile.language]
+  );
+
+  useEffect(() => {
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const update = () => {
+      const d = now();
+      const nextMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0);
+      const ms = Math.max(0, nextMidnight.getTime() - d.getTime());
+      const totalSec = Math.floor(ms / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      setTimeLeftLabel(`${h}:${pad2(m)}:${pad2(s)} ${t('home.leftToday')}`);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [t, i18n.language]);
 
   const customHabits = useMemo(
     () => state.habits.filter((h) => h.type === 'custom'),
@@ -52,26 +71,44 @@ export default function HomeScreen() {
     [customHabits, today]
   );
 
-  const quranStreakLogs = useMemo(() => quranLogsForStreak(state.quranLogs), [state.quranLogs]);
-  const qStreak = calculateQuranStreakState(quranStreakLogs, today);
-  const quranDoneToday = Boolean(state.quranLogs.some((q) => q.date === todayStr && q.completed));
+  const glowPulse = useRef(new Animated.Value(0)).current;
+  const glowOpacity = useMemo(
+    () => glowPulse.interpolate({ inputRange: [0, 1], outputRange: [0.32, 0.78] }),
+    [glowPulse]
+  );
+  const glowScale = useMemo(
+    () => glowPulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }),
+    [glowPulse]
+  );
 
-  const stats = useMemo(() => {
-    let completed = quranDoneToday ? 1 : 0;
-    let activeStreaks = qStreak.currentStreak > 0 ? 1 : 0;
-    for (const h of dueTodayList) {
-      const s = calculateStreak(h.id, state.habitLogs, h, today);
-      if (s.completedToday) completed += 1;
-      if (s.currentStreak > 0) activeStreaks += 1;
+  useEffect(() => {
+    if (customHabits.length > 0) {
+      glowPulse.stopAnimation();
+      glowPulse.setValue(0);
+      return undefined;
     }
-    return {
-      due: dueTodayList.length + 1,
-      completed,
-      activeStreaks,
-    };
-  }, [dueTodayList, quranDoneToday, qStreak.currentStreak, state.habitLogs, today]);
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowPulse, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowPulse, {
+          toValue: 0,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [customHabits.length, glowPulse]);
 
   const initial = (state.userProfile.name || '?').trim().charAt(0).toUpperCase();
+  const [ritualOn, setRitualOn] = useState(false);
 
   const toggleHabit = (habitId, completed) => {
     dispatch({
@@ -80,206 +117,254 @@ export default function HomeScreen() {
     });
   };
 
-  const markQuranComplete = () => {
-    if (!quranDoneToday) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      dispatch({
-        type: ActionTypes.UPSERT_QURAN_LOG,
-        payload: { date: todayStr, completed: true },
-      });
-      return;
-    }
-    Alert.alert('Undo Quran completion?', 'Remove today as completed?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Undo',
-        style: 'destructive',
-        onPress: () => {
-          dispatch({
-            type: ActionTypes.SET_QURAN_LOGS,
-            payload: state.quranLogs.filter((q) => q.date !== todayStr),
-          });
-        },
-      },
-    ]);
-  };
+  const allDueDone = useMemo(() => {
+    if (dueTodayList.length === 0) return false;
+    return dueTodayList.every((h) => {
+      const log = state.habitLogs.find((l) => l.habitId === h.id && l.date === todayStr);
+      return Boolean(log?.completed);
+    });
+  }, [dueTodayList, state.habitLogs, todayStr]);
 
-  const quote = quoteForDay(getDayOfYear(today));
+  const [prevAllDueDone, setPrevAllDueDone] = useState(false);
+  useEffect(() => {
+    if (!prevAllDueDone && allDueDone) {
+      setRitualOn(true);
+    }
+    if (prevAllDueDone !== allDueDone) setPrevAllDueDone(allDueDone);
+  }, [allDueDone, prevAllDueDone]);
+
+  const quoteIdx = Math.abs(getDayOfYear(today)) % MOTIVATION_QUOTE_COUNT;
+  const quote = {
+    text: t(`motivation.${quoteIdx}.text`),
+    source: t(`motivation.${quoteIdx}.source`),
+  };
+  const greetKey =
+    greetingPeriod(today) === 'morning'
+      ? 'home.greetMorning'
+      : greetingPeriod(today) === 'afternoon'
+        ? 'home.greetAfternoon'
+        : 'home.greetEvening';
+  const displayName = state.userProfile.name || t('home.friend');
 
   return (
-    <ScrollView
-      style={[styles.screen, { paddingTop: insets.top + spacing.md }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={[typography.subheading, styles.salam]}>السلام عليكم</Text>
-          <Text style={[typography.body, styles.greet]}>
-            Good {greetingPeriod(today)}, {state.userProfile.name || 'friend'}
-          </Text>
+    <View style={[styles.screen, { paddingTop: insets.top + spacing.md }]}>
+      <HabitCompletionRitual visible={ritualOn} onFinished={() => setRitualOn(false)} />
+      <ScrollView
+        contentContainerStyle={[styles.content, { flexGrow: 1, paddingBottom: spacing.xl }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.main}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={[typography.subheading, styles.salam]}>{t('home.salam')}</Text>
+              <Text style={[typography.body, styles.greet]}>{t(greetKey, { name: displayName })}</Text>
+            </View>
+            <Pressable
+              onPress={() => router.push('/(tabs)/profile')}
+              style={styles.avatar}
+              accessibilityRole="button"
+              accessibilityLabel={t('home.openProfile')}
+            >
+              <Text style={[typography.heading, styles.avatarTxt]}>{initial}</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.dates}>
+            <Text style={[typography.subheading, styles.dateGreg]}>
+              {formatDateDisplay(today, dateLocale)}
+            </Text>
+            <Text style={[typography.bodySmall, styles.dateHij]}>{formatHijriDisplay(today, t)}</Text>
+            <Text style={[typography.caption, styles.countdown]}>{timeLeftLabel}</Text>
+          </View>
+
+          <View style={[styles.card, shadows.card]}>
+            <Text style={[typography.heading, styles.sectionTitle]}>{t('home.todaysHabits')}</Text>
+            {dueTodayList.length === 0 ? (
+              <>
+                <Text style={[typography.body, styles.emptyH]}>{t('home.noHabitsDue')}</Text>
+                <View style={styles.addHabitBtnWrap}>
+                  {customHabits.length === 0 ? (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[
+                        styles.addHabitBtnGlow,
+                        { backgroundColor: colors.primary },
+                        { opacity: glowOpacity, transform: [{ scale: glowScale }] },
+                      ]}
+                    />
+                  ) : null}
+                  <Pressable
+                    onPress={() => router.push('/(tabs)/habits')}
+                    style={({ pressed }) => [styles.addHabitBtn, pressed && styles.addHabitBtnPressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('home.a11yAddHabit')}
+                  >
+                    <Text style={[typography.subheading, styles.addHabitBtnTxt]}>{t('home.addHabit')}</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
+            {dueTodayList.map((h) => {
+              const s = calculateStreak(h.id, state.habitLogs, h, today);
+              const log = state.habitLogs.find((l) => l.habitId === h.id && l.date === todayStr);
+              const done = Boolean(log?.completed);
+              const willCompleteAll =
+                !done &&
+                dueTodayList.every((x) => {
+                  if (x.id === h.id) return true;
+                  const lx = state.habitLogs.find((l) => l.habitId === x.id && l.date === todayStr);
+                  return Boolean(lx?.completed);
+                });
+              return (
+                <HabitCard
+                  key={h.id}
+                  name={h.name}
+                  streak={s.currentStreak}
+                  atRisk={isEvening ? s.atRisk : false}
+                  completed={done}
+                  suppressConfettiOnComplete={willCompleteAll}
+                  onToggle={() => toggleHabit(h.id, done)}
+                />
+              );
+            })}
+          </View>
         </View>
-        <Pressable
-          onPress={() => router.push('/(tabs)/profile')}
-          style={styles.avatar}
-          accessibilityRole="button"
-          accessibilityLabel="Open profile"
-        >
-          <Text style={[typography.heading, styles.avatarTxt]}>{initial}</Text>
-        </Pressable>
-      </View>
 
-      <View style={[styles.card, shadows.card]}>
-        <Text style={[typography.subheading, styles.dateGreg]}>{formatDateDisplay(today)}</Text>
-        <Text style={[typography.bodySmall, styles.dateHij]}>{formatHijriDisplay(today)}</Text>
-        <View style={styles.pills}>
-          <View style={styles.pill}>
-            <Text style={[typography.caption, styles.pillLabel]}>Habits due</Text>
-            <Text style={[typography.subheading, styles.pillVal]}>{stats.due}</Text>
-          </View>
-          <View style={styles.pill}>
-            <Text style={[typography.caption, styles.pillLabel]}>Completed</Text>
-            <Text style={[typography.subheading, styles.pillVal]}>{stats.completed}</Text>
-          </View>
-          <View style={styles.pill}>
-            <Text style={[typography.caption, styles.pillLabel]}>Streaks active</Text>
-            <Text style={[typography.subheading, styles.pillVal]}>{stats.activeStreaks}</Text>
-          </View>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+          <Text style={[typography.bodySmall, styles.quote]}>{quote.text}</Text>
+          <Text style={[typography.caption, styles.quoteSrc]}>{quote.source}</Text>
         </View>
-      </View>
-
-      <Text style={[typography.heading, styles.sectionTitle]}>Today&apos;s habits</Text>
-      {dueTodayList.length === 0 ? (
-        <Text style={[typography.body, styles.emptyH]}>No custom habits due today.</Text>
-      ) : null}
-      <HabitCard
-        name="Quran"
-        streak={qStreak.currentStreak}
-        atRisk={qStreak.atRisk && !quranDoneToday}
-        completed={quranDoneToday}
-        onToggle={markQuranComplete}
-      />
-      {dueTodayList.map((h) => {
-        const s = calculateStreak(h.id, state.habitLogs, h, today);
-        const log = state.habitLogs.find((l) => l.habitId === h.id && l.date === todayStr);
-        const done = Boolean(log?.completed);
-        return (
-          <HabitCard
-            key={h.id}
-            name={h.name}
-            streak={s.currentStreak}
-            atRisk={s.atRisk}
-            completed={done}
-            onToggle={() => toggleHabit(h.id, done)}
-          />
-        );
-      })}
-
-      <View style={styles.footer}>
-        <Text style={[typography.bodySmall, styles.quote]}>{quote}</Text>
-      </View>
-
-      <View style={{ height: spacing.xxl }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.lg,
-  },
-  headerLeft: {
-    flex: 1,
-    paddingRight: spacing.md,
-  },
-  salam: {
-    color: colors.accent,
-    marginBottom: spacing.xs,
-  },
-  greet: {
-    color: colors.textSecondary,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarTxt: {
-    color: colors.primary,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.xl,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  dateGreg: {
-    color: colors.textPrimary,
-  },
-  dateHij: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  pills: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  pill: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: radii.md,
-    padding: spacing.sm,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  pillLabel: {
-    color: colors.textMuted,
-  },
-  pillVal: {
-    color: colors.textPrimary,
-    marginTop: 2,
-  },
-  sectionTitle: {
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  emptyH: {
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  footer: {
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    marginTop: spacing.md,
-  },
-  quote: {
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});
+function makeStyles({ colors, radii, spacing }) {
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      paddingHorizontal: spacing.md,
+    },
+    main: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: spacing.lg,
+    },
+    headerLeft: {
+      flex: 1,
+      paddingRight: spacing.md,
+    },
+    salam: {
+      color: colors.accent,
+      marginBottom: spacing.xs,
+      textAlign: 'center',
+      marginLeft: 60,
+    },
+    greet: {
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginLeft: 60,
+    },
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarTxt: {
+      color: colors.primary,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.xl,
+      padding: spacing.md,
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    dates: {
+      marginBottom: spacing.lg,
+      paddingHorizontal: spacing.xs,
+      alignItems: 'center',
+    },
+    dateGreg: {
+      color: colors.textPrimary,
+      textAlign: 'center',
+    },
+    dateHij: {
+      color: colors.textSecondary,
+      marginTop: spacing.xs,
+      marginBottom: spacing.md,
+      textAlign: 'center',
+    },
+    countdown: {
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: -spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    sectionTitle: {
+      color: colors.textPrimary,
+      marginBottom: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    emptyH: {
+      color: colors.textSecondary,
+      marginBottom: spacing.md,
+    },
+    addHabitBtnWrap: {
+      alignSelf: 'center',
+      position: 'relative',
+    },
+    addHabitBtnGlow: {
+      position: 'absolute',
+      top: -8,
+      left: -14,
+      right: -14,
+      bottom: -8,
+      borderRadius: radii.lg + 6,
+    },
+    addHabitBtn: {
+      zIndex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: radii.lg,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      alignSelf: 'center',
+    },
+    addHabitBtnPressed: {
+      opacity: 0.85,
+    },
+    addHabitBtnTxt: {
+      color: colors.background,
+    },
+    footer: {
+      marginTop: spacing.md,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    quote: {
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    quoteSrc: {
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: spacing.xs,
+    },
+  });
+}

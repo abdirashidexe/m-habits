@@ -1,10 +1,11 @@
+import { coerceLanguageId } from '../constants/languages';
 import { nowIso } from '../utils/now';
 
 /**
  * @typedef {Object} Habit
  * @property {string} id
  * @property {string} name
- * @property {'quran' | 'custom'} type
+ * @property {'custom'} type
  * @property {'daily' | 'specific_days'} frequency
  * @property {number[]} specificDays
  * @property {boolean} reminderEnabled
@@ -22,26 +23,21 @@ import { nowIso } from '../utils/now';
  */
 
 /**
- * @typedef {Object} QuranLog
- * @property {string} date
- * @property {true} completed
- */
-
-/**
  * @typedef {Object} UserProfile
  * @property {string} name
  * @property {boolean} isPremium
  * @property {string | null} premiumSince
  * @property {string} joinedAt
  * @property {string} timezone
- * @property {number} quranDailyGoal
+ * @property {boolean} darkMode
+ * @property {'main' | 'pink' | 'blue'} colorTheme
+ * @property {'en' | 'ar' | 'ur' | 'so'} language
  */
 
 /**
  * @typedef {Object} AppState
  * @property {Habit[]} habits
  * @property {HabitLog[]} habitLogs
- * @property {QuranLog[]} quranLogs
  * @property {UserProfile} userProfile
  * @property {boolean} onboarded
  * @property {boolean} masterNotificationsEnabled
@@ -56,14 +52,15 @@ export const defaultUserProfile = {
   premiumSince: null,
   joinedAt: '',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-  quranDailyGoal: 1,
+  darkMode: false,
+  colorTheme: 'main',
+  language: 'en',
 };
 
 /** @type {AppState} */
 export const initialState = {
   habits: [],
   habitLogs: [],
-  quranLogs: [],
   userProfile: { ...defaultUserProfile },
   onboarded: false,
   masterNotificationsEnabled: true,
@@ -75,7 +72,9 @@ export const ActionTypes = {
   HYDRATE: 'HYDRATE',
   SET_ONBOARDED: 'SET_ONBOARDED',
   SET_USER_NAME: 'SET_USER_NAME',
-  SET_QURAN_DAILY_GOAL: 'SET_QURAN_DAILY_GOAL',
+  SET_DARK_MODE: 'SET_DARK_MODE',
+  SET_COLOR_THEME: 'SET_COLOR_THEME',
+  SET_LANGUAGE: 'SET_LANGUAGE',
   SET_PREMIUM: 'SET_PREMIUM',
   SET_MASTER_NOTIFICATIONS: 'SET_MASTER_NOTIFICATIONS',
   SET_DEV_DATE_OVERRIDE: 'SET_DEV_DATE_OVERRIDE',
@@ -85,8 +84,6 @@ export const ActionTypes = {
   DELETE_HABIT: 'DELETE_HABIT',
   SET_HABIT_LOGS: 'SET_HABIT_LOGS',
   TOGGLE_HABIT_LOG: 'TOGGLE_HABIT_LOG',
-  SET_QURAN_LOGS: 'SET_QURAN_LOGS',
-  UPSERT_QURAN_LOG: 'UPSERT_QURAN_LOG',
   RESET_ALL: 'RESET_ALL',
 };
 
@@ -135,17 +132,34 @@ export function appReducer(state, action) {
           name: String(action.payload || ''),
         },
       };
-    case ActionTypes.SET_QURAN_DAILY_GOAL: {
-      const n = Number(action.payload);
-      const g = Number.isFinite(n) ? Math.min(604, Math.max(1, Math.floor(n))) : 1;
+    case ActionTypes.SET_DARK_MODE:
       return {
         ...state,
         userProfile: {
           ...state.userProfile,
-          quranDailyGoal: g,
+          darkMode: Boolean(action.payload),
+        },
+      };
+    case ActionTypes.SET_COLOR_THEME: {
+      const v = action.payload;
+      const colorTheme =
+        v === 'pink' || v === 'blue' || v === 'main' ? v : 'main';
+      return {
+        ...state,
+        userProfile: {
+          ...state.userProfile,
+          colorTheme,
         },
       };
     }
+    case ActionTypes.SET_LANGUAGE:
+      return {
+        ...state,
+        userProfile: {
+          ...state.userProfile,
+          language: coerceLanguageId(action.payload),
+        },
+      };
     case ActionTypes.SET_PREMIUM: {
       const on = Boolean(action.payload);
       return {
@@ -204,18 +218,6 @@ export function appReducer(state, action) {
         });
       }
       return { ...state, habitLogs: next };
-    }
-    case ActionTypes.SET_QURAN_LOGS:
-      return { ...state, quranLogs: Array.isArray(action.payload) ? action.payload : [] };
-    case ActionTypes.UPSERT_QURAN_LOG: {
-      /** @type {QuranLog} */
-      const log = action.payload;
-      const idx = state.quranLogs.findIndex((q) => q.date === log.date);
-      const next = [...state.quranLogs];
-      const entry = { date: log.date, completed: true };
-      if (idx >= 0) next[idx] = entry;
-      else next.push(entry);
-      return { ...state, quranLogs: next };
     }
     case ActionTypes.RESET_ALL:
       return {

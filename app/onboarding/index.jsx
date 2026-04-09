@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
+import { LANGUAGES } from '../../constants/languages';
 import { useApp, ActionTypes, runPostOnboardingNotificationSetup } from '../../context/AppContext';
 import { Button } from '../../components/Button';
 import { colors, typography, spacing, radii } from '../../theme';
@@ -18,28 +28,19 @@ function MoonIllustration() {
   );
 }
 
-function parseGoal(raw) {
-  const n = parseInt(String(raw).replace(/[^\d]/g, ''), 10);
-  if (!Number.isFinite(n)) return null;
-  if (n < 1 || n > 604) return null;
-  return n;
-}
-
 export default function OnboardingScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { dispatch } = useApp();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [goalInput, setGoalInput] = useState('1');
-
-  const goalNum = parseGoal(goalInput);
-  const goalValid = goalNum !== null;
+  const [language, setLanguage] = useState('en');
 
   const finish = async () => {
     const trimmed = name.trim();
-    if (!trimmed || !goalValid || goalNum === null) return;
+    if (!trimmed) return;
+    dispatch({ type: ActionTypes.SET_LANGUAGE, payload: language });
     dispatch({ type: ActionTypes.SET_USER_NAME, payload: trimmed });
-    dispatch({ type: ActionTypes.SET_QURAN_DAILY_GOAL, payload: goalNum });
     dispatch({ type: ActionTypes.SET_ONBOARDED, payload: { onboarded: true, nowIso: nowIso() } });
     await runPostOnboardingNotificationSetup();
     router.replace('/(tabs)');
@@ -52,64 +53,71 @@ export default function OnboardingScreen() {
     >
       {step === 0 ? (
         <View style={styles.slide}>
-          <Text style={[typography.displayLarge, styles.title]}>Nur</Text>
-          <Text style={[typography.body, styles.tagline]}>
-            Your daily companion for a life of barakah
-          </Text>
+          <Text style={[typography.displayLarge, styles.title]}>{t('onboarding.title')}</Text>
+          <Text style={[typography.body, styles.tagline]}>{t('onboarding.tagline')}</Text>
           <MoonIllustration />
-          <Button title="Continue" onPress={() => setStep(1)} style={styles.btn} />
+          <Button title={t('onboarding.continue')} onPress={() => setStep(1)} style={styles.btn} />
         </View>
       ) : null}
 
       {step === 1 ? (
         <View style={styles.slide}>
-          <Text style={[typography.displayMedium, styles.heading]}>Track what matters</Text>
-          <Text style={[typography.body, styles.body]}>
-            Nur helps you stay close to the Quran with a daily reading goal and build habits you
-            shape for your own path.
-          </Text>
-          <Button title="Continue" onPress={() => setStep(2)} style={styles.btn} />
+          <Text style={[typography.heading, styles.q]}>{t('onboarding.chooseLanguage')}</Text>
+          <Text style={[typography.bodySmall, styles.hint]}>{t('onboarding.languageHint')}</Text>
+          <View style={styles.langList}>
+            {LANGUAGES.map(({ id, native }) => (
+              <Pressable
+                key={id}
+                onPress={() => {
+                  setLanguage(id);
+                  dispatch({ type: ActionTypes.SET_LANGUAGE, payload: id });
+                }}
+                style={[
+                  styles.langRow,
+                  language === id ? styles.langRowOn : styles.langRowOff,
+                ]}
+              >
+                <Text
+                  style={[
+                    typography.body,
+                    language === id ? styles.langTxtOn : styles.langTxtOff,
+                  ]}
+                >
+                  {native}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Button title={t('onboarding.continue')} onPress={() => setStep(2)} style={styles.btn} />
         </View>
       ) : null}
 
       {step === 2 ? (
         <View style={styles.slide}>
-          <Text style={[typography.heading, styles.q]}>What should we call you?</Text>
+          <Text style={[typography.displayMedium, styles.heading]}>{t('onboarding.trackTitle')}</Text>
+          <Text style={[typography.body, styles.body]}>{t('onboarding.trackBody')}</Text>
+          <Button title={t('onboarding.continue')} onPress={() => setStep(3)} style={styles.btn} />
+        </View>
+      ) : null}
+
+      {step === 3 ? (
+        <View style={styles.slide}>
+          <Text style={[typography.heading, styles.q]}>{t('onboarding.nameQuestion')}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="Your name"
+            placeholder={t('onboarding.namePlaceholder')}
             placeholderTextColor={colors.textMuted}
             style={[typography.body, styles.input]}
             maxLength={40}
             autoFocus
           />
           <Button
-            title="Continue"
-            onPress={() => setStep(3)}
+            title={t('onboarding.getStarted')}
+            onPress={finish}
             disabled={!name.trim()}
             style={styles.btn}
           />
-        </View>
-      ) : null}
-
-      {step === 3 ? (
-        <View style={styles.slide}>
-          <Text style={[typography.heading, styles.q]}>
-            How many pages of Quran do you want to read daily?
-          </Text>
-          <TextInput
-            value={goalInput}
-            onChangeText={setGoalInput}
-            placeholder="1"
-            placeholderTextColor={colors.textMuted}
-            style={[typography.body, styles.input]}
-            keyboardType="number-pad"
-            maxLength={3}
-            autoFocus
-          />
-          <Text style={[typography.caption, styles.hint]}>Between 1 and 604 pages per day.</Text>
-          <Button title="Get Started" onPress={finish} disabled={!goalValid} style={styles.btn} />
         </View>
       ) : null}
     </KeyboardAvoidingView>
@@ -207,5 +215,30 @@ const styles = StyleSheet.create({
   },
   btn: {
     marginTop: spacing.md,
+  },
+  langList: {
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  langRow: {
+    borderRadius: radii.lg,
+    borderWidth: 2,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  langRowOff: {
+    borderColor: colors.divider,
+    backgroundColor: colors.surface,
+  },
+  langRowOn: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceElevated,
+  },
+  langTxtOff: {
+    color: colors.textPrimary,
+  },
+  langTxtOn: {
+    color: colors.textPrimary,
+    fontWeight: '600',
   },
 });

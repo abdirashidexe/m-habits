@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ function isValidYmd(s) {
   return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s.trim());}
 
 export default function DevToolsModal() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, dispatch } = useApp();
@@ -33,7 +35,7 @@ export default function DevToolsModal() {
       return;
     }
     if (!isValidYmd(v)) {
-      Alert.alert('Invalid date', 'Use YYYY-MM-DD.', [{ text: 'OK' }]);
+      Alert.alert(t('devTools.invalidDate'), t('devTools.invalidDateMsg'), [{ text: t('common.ok') }]);
       return;
     }
     dispatch({ type: ActionTypes.SET_DEV_DATE_OVERRIDE, payload: v });
@@ -58,22 +60,8 @@ export default function DevToolsModal() {
       }
     }
 
-    const quranLogs = [...state.quranLogs];
-    const qSet = new Set(quranLogs.map((q) => q.date));
-    for (const day of days) {
-      const ds = toLocalDateString(day);
-      if (!qSet.has(ds)) {
-        qSet.add(ds);
-        quranLogs.push({ date: ds, completed: true });
-      }
-    }
-    quranLogs.sort((a, b) => a.date.localeCompare(b.date));
-
     dispatch({ type: ActionTypes.SET_HABIT_LOGS, payload: habitLogs });
-    dispatch({ type: ActionTypes.SET_QURAN_LOGS, payload: quranLogs });
-    Alert.alert('Injected', 'Added 7 days of completed logs for all habits (and Quran).', [
-      { text: 'OK' },
-    ]);
+    Alert.alert(t('devTools.injected'), t('devTools.injected7'), [{ text: t('common.ok') }]);
   };
 
   const injectMissedYesterday = () => {
@@ -94,24 +82,18 @@ export default function DevToolsModal() {
       }
     }
 
-    const quranLogs = state.quranLogs.filter((q) => q.date !== yStr);
-
     dispatch({ type: ActionTypes.SET_HABIT_LOGS, payload: habitLogs });
-    dispatch({ type: ActionTypes.SET_QURAN_LOGS, payload: quranLogs });
-    Alert.alert('Injected', 'Marked yesterday as missed (and removed Quran completion yesterday).', [
-      { text: 'OK' },
-    ]);
+    Alert.alert(t('devTools.injected'), t('devTools.injectedMissed'), [{ text: t('common.ok') }]);
   };
 
   const clearLogsOnly = () => {
-    Alert.alert('Clear logs?', 'This clears all logs, but keeps habits and your profile.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('devTools.clearLogsTitle'), t('devTools.clearLogsMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Clear logs',
+        text: t('devTools.clearLogsBtn'),
         style: 'destructive',
         onPress: () => {
           dispatch({ type: ActionTypes.SET_HABIT_LOGS, payload: [] });
-          dispatch({ type: ActionTypes.SET_QURAN_LOGS, payload: [] });
         },
       },
     ]);
@@ -121,37 +103,37 @@ export default function DevToolsModal() {
     <View style={[styles.screen, { paddingTop: insets.top + spacing.sm }]}>
       <View style={styles.topBar}>
         <View style={styles.spacer} />
-        <Text style={[typography.heading, styles.title]}>Dev Tools</Text>
-        <Pressable onPress={close} style={styles.closeBtn} accessibilityLabel="Close">
+        <Text style={[typography.heading, styles.title]}>{t('devTools.title')}</Text>
+        <Pressable onPress={close} style={styles.closeBtn} accessibilityLabel={t('common.close')}>
           <Text style={[typography.heading, styles.closeTxt]}>×</Text>
         </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, shadows.card]}>
-          <Text style={[typography.subheading, styles.cardTitle]}>Date override</Text>
-          <Text style={[typography.caption, styles.help]}>
-            Set `nur_dev_date` to override time in the app. Clear the field to disable.
-          </Text>
+          <Text style={[typography.subheading, styles.cardTitle]}>{t('devTools.dateOverride')}</Text>
+          <Text style={[typography.caption, styles.help]}>{t('devTools.dateHelp')}</Text>
           <Input
-            label="Override date (YYYY-MM-DD)"
+            label={t('devTools.overrideLabel')}
             value={devDate}
             onChangeText={setDevDate}
-            placeholder="2026-04-07"
+            placeholder={t('devTools.overridePh')}
           />
-          <Button title="Apply" onPress={applyDevDate} />
+          <Button title={t('devTools.apply')} onPress={applyDevDate} />
         </View>
 
         <View style={[styles.card, shadows.card]}>
-          <Text style={[typography.subheading, styles.cardTitle]}>Streak testing</Text>
-          <Text style={[typography.caption, styles.help]}>
-            These actions affect logs only (habits and profile are preserved).
-          </Text>
-          <Button title="Inject 7 days completed (all habits)" onPress={inject7DaysCompleted} />
+          <Text style={[typography.subheading, styles.cardTitle]}>{t('devTools.streakTesting')}</Text>
+          <Text style={[typography.caption, styles.help]}>{t('devTools.streakHelp')}</Text>
+          <Button title={t('devTools.inject7')} onPress={inject7DaysCompleted} />
           <View style={{ height: spacing.sm }} />
-          <Button title="Inject missed yesterday (break streaks)" variant="secondary" onPress={injectMissedYesterday} />
+          <Button
+            title={t('devTools.injectMissed')}
+            variant="secondary"
+            onPress={injectMissedYesterday}
+          />
           <View style={{ height: spacing.sm }} />
-          <Button title="Clear all logs" variant="ghost" onPress={clearLogsOnly} />
+          <Button title={t('devTools.clearLogs')} variant="ghost" onPress={clearLogsOnly} />
         </View>
       </ScrollView>
     </View>

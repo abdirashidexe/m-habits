@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
 } from 'react';
 import {
   appReducer,
@@ -13,6 +14,10 @@ import {
   defaultUserProfile,
 } from './AppReducer';
 import * as storage from '../utils/storage';
+import { LANGUAGE_IDS } from '../constants/languages';
+import { COLOR_THEME_IDS } from '../theme';
+import i18n from '../i18n';
+import { syncRtlForLanguage } from '../utils/rtl';
 import { setDevDateOverride } from '../utils/now';
 import {
   cancelHabitReminder,
@@ -23,36 +28,19 @@ import {
 } from '../utils/notifications';
 
 /**
- * @param {unknown[]} raw
- * @returns {{ date: string, completed: true }[]}
- */
-function normalizeQuranLogs(raw) {
-  if (!Array.isArray(raw)) return [];
-  const out = [];
-  const seen = new Set();
-  for (const q of raw) {
-    if (!q || typeof q !== 'object' || typeof q.date !== 'string') continue;
-    const completed =
-      q.completed === true ||
-      (typeof q.pagesRead === 'number' && q.pagesRead >= 1);
-    if (!completed) continue;
-    if (seen.has(q.date)) continue;
-    seen.add(q.date);
-    out.push({ date: q.date, completed: true });
-  }
-  out.sort((a, b) => a.date.localeCompare(b.date));
-  return out;
-}
-
-/**
  * @param {unknown} p
  * @returns {import('./AppReducer').UserProfile}
  */
 function normalizeUserProfile(p) {
-  const base = { ...defaultUserProfile, ...(p && typeof p === 'object' ? p : {}) };
-  const g = Number(base.quranDailyGoal);
-  base.quranDailyGoal = Number.isFinite(g) ? Math.min(604, Math.max(1, Math.floor(g))) : 1;
-  return base;
+  const raw = p && typeof p === 'object' ? p : {};
+  const merged = { ...defaultUserProfile, ...raw };
+  merged.colorTheme = COLOR_THEME_IDS.includes(merged.colorTheme)
+    ? merged.colorTheme
+    : defaultUserProfile.colorTheme;
+  merged.language = LANGUAGE_IDS.includes(merged.language)
+    ? merged.language
+    : defaultUserProfile.language;
+  return merged;
 }
 
 /** @type {React.Context<null | ReturnType<typeof buildContextValue>>} */
@@ -71,24 +59,45 @@ export function useApp() {
   return ctx;
 }
 
+function NurI18nSync() {
+  const { state } = useApp();
+  const prevLangRef = useRef(null);
+
+  useEffect(() => {
+    if (!state.hydrated) return;
+    const lang = state.userProfile.language || 'en';
+    void i18n.changeLanguage(lang);
+    syncRtlForLanguage(lang);
+  }, [state.hydrated, state.userProfile.language]);
+
+  useEffect(() => {
+    if (!state.hydrated) return;
+    const lang = state.userProfile.language || 'en';
+    if (prevLangRef.current !== null && prevLangRef.current !== lang) {
+      void rescheduleAllHabitReminders(state.habits.filter((h) => h.type === 'custom'));
+    }
+    prevLangRef.current = lang;
+  }, [state.hydrated, state.userProfile.language, state.habits]);
+
+  return null;
+}
+
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [habits, habitLogs, quranLogsRaw, userProfileRaw, onboardedRaw, masterRaw, devDateRaw] =
+      const [habits, habitLogs, userProfileRaw, onboardedRaw, masterRaw, devDateRaw] =
         await Promise.all([
           storage.readJson(storage.KEYS.habits, []),
           storage.readJson(storage.KEYS.habitLogs, []),
-          storage.readJson(storage.KEYS.quranLogs, []),
           storage.readJson(storage.KEYS.userProfile, null),
           storage.readJson(storage.KEYS.onboarded, 'false'),
           storage.readJson(storage.KEYS.masterNotifications, 'true'),
           storage.readJson(storage.KEYS.devDate, null),
         ]);
       if (cancelled) return;
-      const quranLogs = normalizeQuranLogs(quranLogsRaw);
       const userProfile = normalizeUserProfile(userProfileRaw);
       const devDateOverride = typeof devDateRaw === 'string' ? devDateRaw : null;
       setDevDateOverride(devDateOverride);
@@ -97,7 +106,6 @@ export function AppProvider({ children }) {
         payload: {
           habits,
           habitLogs,
-          quranLogs,
           userProfile,
           onboarded: onboardedRaw === 'true',
           masterNotificationsEnabled: masterRaw !== 'false',
@@ -119,11 +127,6 @@ export function AppProvider({ children }) {
     if (!state.hydrated) return;
     storage.writeJson(storage.KEYS.habitLogs, state.habitLogs);
   }, [state.habitLogs, state.hydrated]);
-
-  useEffect(() => {
-    if (!state.hydrated) return;
-    storage.writeJson(storage.KEYS.quranLogs, state.quranLogs);
-  }, [state.quranLogs, state.hydrated]);
 
   useEffect(() => {
     if (!state.hydrated) return;
@@ -165,7 +168,12 @@ export function AppProvider({ children }) {
 
   const value = useMemo(() => buildContextValue(state, dispatch), [state]);
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={value}>
+      <NurI18nSync />
+      {children}
+    </AppContext.Provider>
+  );
 }
 
 /**

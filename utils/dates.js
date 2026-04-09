@@ -39,10 +39,14 @@ export function toLocalDateString(date) {
  * @param {Date | string} date
  * @returns {string}
  */
-export function formatDateDisplay(date) {
+/**
+ * @param {Date | string} date
+ * @param {import('date-fns').Locale} [locale]
+ */
+export function formatDateDisplay(date, locale) {
   const d = typeof date === 'string' ? parseISO(date) : date;
   if (!isValid(d)) return '';
-  return format(d, 'EEEE, MMMM d, yyyy');
+  return format(d, 'EEEE, MMMM d, yyyy', locale ? { locale } : undefined);
 }
 
 /**
@@ -123,11 +127,17 @@ export function gregorianToHijri(gDate) {
 
 /**
  * @param {Date} date
- * @returns {string}
+ * @param {(key: string, opts?: object) => string} t i18n translate
  */
-export function formatHijriDisplay(date) {
+export function formatHijriDisplay(date, t) {
   const h = gregorianToHijri(date);
-  return `${h.day} ${h.monthName} ${h.year} AH`;
+  const month = t(`hijriMonths.${h.month}`);
+  return t('dates.hijri', {
+    day: h.day,
+    month,
+    year: h.year,
+    ah: t('dates.ah'),
+  });
 }
 
 /**

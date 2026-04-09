@@ -1,7 +1,9 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, typography, spacing, radii, shadows } from '../theme';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useNurTheme } from '../hooks/useNurTheme';
+import { ConfettiBurst } from './ConfettiBurst';
 
 /**
  * @param {{
@@ -9,14 +11,20 @@ import { colors, typography, spacing, radii, shadows } from '../theme';
  *   streak: number,
  *   atRisk: boolean,
  *   completed: boolean,
+ *   suppressConfettiOnComplete?: boolean,
  *   onToggle: () => void,
  * }} props
  */
-export function HabitCard({ name, streak, atRisk, completed, onToggle }) {
+export function HabitCard({ name, streak, atRisk, completed, suppressConfettiOnComplete = false, onToggle }) {
+  const { t } = useTranslation();
+  const { colors, typography, spacing, radii, shadows } = useNurTheme();
+  const styles = makeStyles({ colors, typography, spacing, radii });
   const fire = streak > 2;
+  const [confettiOn, setConfettiOn] = useState(false);
 
   const handleToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (!completed && !suppressConfettiOnComplete) setConfettiOn(true);
     onToggle();
   };
 
@@ -29,16 +37,22 @@ export function HabitCard({ name, streak, atRisk, completed, onToggle }) {
         atRisk && !completed && styles.cardRisk,
       ]}
     >
+      <ConfettiBurst
+        active={confettiOn}
+        colors={[colors.primary, colors.accent, colors.premiumGold, colors.success]}
+        onDone={() => setConfettiOn(false)}
+        durationMs={820}
+        style={styles.confettiSmallOrigin}
+      />
       <View style={styles.row}>
         <View style={styles.info}>
           <Text style={[typography.subheading, styles.name]}>{name}</Text>
           <View style={styles.meta}>
             <Text style={[typography.caption, styles.streak]}>
-              {fire ? '🔥 ' : ''}
-              {streak} day streak
+              {t('habitCard.streak', { fire: fire ? '🔥 ' : '', count: streak })}
             </Text>
             {atRisk && !completed ? (
-              <Text style={[typography.caption, styles.risk]}> · At risk</Text>
+              <Text style={[typography.caption, styles.risk]}>{t('habitCard.atRisk')}</Text>
             ) : null}
           </View>
         </View>
@@ -61,7 +75,8 @@ export function HabitCard({ name, streak, atRisk, completed, onToggle }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles({ colors, typography, spacing, radii }) {
+  return StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.xl,
@@ -124,4 +139,9 @@ const styles = StyleSheet.create({
   checkEmpty: {
     color: 'transparent',
   },
-});
+  confettiSmallOrigin: {
+    right: 23,
+    top: 23,
+  },
+  });
+}

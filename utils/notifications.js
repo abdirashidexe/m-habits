@@ -1,6 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+import i18n from '../i18n';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -61,7 +63,7 @@ export async function scheduleHabitReminder(habit) {
   if (!t) return;
 
   const title = habit.name;
-  const body = "Don't break your streak — tap to log today.";
+  const body = i18n.t('notifications.reminderBody');
 
   const content = { title, body };
 
@@ -134,7 +136,7 @@ export async function cancelAllLocalNotifications() {
 export async function setupAndroidNotificationChannel() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('nur-default', {
-      name: 'Nur reminders',
+      name: i18n.t('notifications.channelName'),
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }

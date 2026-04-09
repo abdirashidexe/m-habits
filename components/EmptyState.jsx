@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing } from '../theme';
+import { useNurTheme } from '../hooks/useNurTheme';
 
 /**
  * @param {{ title: string, message: string, style?: object }} props
  */
 export function EmptyState({ title, message, style }) {
+  const { colors, typography, spacing } = useNurTheme();
+  const styles = makeStyles({ colors, typography, spacing });
   return (
     <View style={[styles.wrap, style]}>
       <Text style={[typography.heading, styles.title]}>{title}</Text>
@@ -14,7 +16,8 @@ export function EmptyState({ title, message, style }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles({ colors, typography, spacing }) {
+  return StyleSheet.create({
   wrap: {
     padding: spacing.lg,
     alignItems: 'center',
@@ -29,4 +32,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-});
+  });
+}

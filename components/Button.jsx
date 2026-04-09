@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
-import { colors, typography, spacing, radii } from '../theme';
+import { useNurTheme } from '../hooks/useNurTheme';
 
 /**
  * @param {{
@@ -20,6 +20,8 @@ export function Button({
   loading = false,
   style,
 }) {
+  const { colors, typography, spacing, radii } = useNurTheme();
+  const styles = makeStyles({ colors, typography, spacing, radii });
   const isPrimary = variant === 'primary';
   const isGhost = variant === 'ghost';
 
@@ -58,7 +60,8 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles({ colors, typography, spacing, radii }) {
+  return StyleSheet.create({
   base: {
     borderRadius: radii.xl,
     paddingVertical: spacing.sm + 2,
@@ -103,4 +106,5 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-});
+  });
+}

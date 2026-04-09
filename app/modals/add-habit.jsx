@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -17,17 +18,20 @@ import { useApp, ActionTypes } from '../../context/AppContext';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { DayPicker } from '../../components/DayPicker';
-import { colors, typography, spacing, radii } from '../../theme';
+import { useNurTheme } from '../../hooks/useNurTheme';
 import { createUuid } from '../../utils/uuid';
 import { scheduleHabitReminder, cancelHabitReminder } from '../../utils/notifications';
 import { nowIso } from '../../utils/now';
 
 export default function AddHabitModal() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const editId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : undefined;
   const { state, dispatch } = useApp();
+  const { colors, typography, spacing, radii } = useNurTheme();
+  const styles = makeStyles({ colors, spacing, radii });
 
   const existing = useMemo(
     () => (editId ? state.habits.find((h) => h.id === editId) : null),
@@ -72,21 +76,19 @@ export default function AddHabitModal() {
     if (!freqDaily && specificDays.length === 0) return;
 
     if (!existing && !premium && customCount >= 3) {
-      Alert.alert(
-        'Nur Premium',
-        'Free accounts can track up to 3 custom habits. Unlock Premium for unlimited habits.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert(t('addHabit.premiumTitle'), t('addHabit.premiumBody'), [{ text: t('common.ok') }]);
       return;
     }
 
+    const allDaysSelected = !freqDaily && Array.isArray(specificDays) && specificDays.length === 7;
+    const normalizedFreqDaily = freqDaily || allDaysSelected;
     const reminderTime = reminderOn ? reminderTimeStr() : null;
     const payload = {
       id: existing?.id || createUuid(),
       name: trimmed.slice(0, 40),
       type: 'custom',
-      frequency: freqDaily ? 'daily' : 'specific_days',
-      specificDays: freqDaily ? [] : [...specificDays].sort((a, b) => a - b),
+      frequency: normalizedFreqDaily ? 'daily' : 'specific_days',
+      specificDays: normalizedFreqDaily ? [] : [...specificDays].sort((a, b) => a - b),
       reminderEnabled: reminderOn,
       reminderTime,
       createdAt: existing?.createdAt || nowIso(),
@@ -119,31 +121,31 @@ export default function AddHabitModal() {
       <View style={styles.topBar}>
         <View style={styles.topSpacer} />
         <Text style={[typography.heading, styles.title]}>
-          {existing ? 'Edit habit' : 'New habit'}
+          {existing ? t('addHabit.editTitle') : t('addHabit.newTitle')}
         </Text>
-        <Pressable onPress={close} style={styles.closeBtn} accessibilityLabel="Close">
+        <Pressable onPress={close} style={styles.closeBtn} accessibilityLabel={t('common.close')}>
           <Text style={[typography.heading, styles.closeTxt]}>×</Text>
         </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         <Input
-          label="Habit name"
+          label={t('addHabit.habitName')}
           value={name}
-          onChangeText={(t) => setName(t.slice(0, 40))}
-          placeholder="e.g. Dhuhr in congregation"
+          onChangeText={(tx) => setName(tx.slice(0, 40))}
+          placeholder={t('addHabit.namePlaceholder')}
           maxLength={40}
         />
-        <Text style={[typography.caption, styles.count]}>{name.length}/40</Text>
+        <Text style={[typography.caption, styles.count]}>{t('addHabit.chars', { n: name.length })}</Text>
 
-        <Text style={[typography.subheading, styles.lbl]}>Frequency</Text>
+        <Text style={[typography.subheading, styles.lbl]}>{t('addHabit.frequency')}</Text>
         <View style={styles.freqRow}>
           <Pressable
             onPress={() => setFreqDaily(true)}
             style={[styles.chip, freqDaily && styles.chipOn]}
           >
             <Text style={[typography.body, freqDaily ? styles.chipTxtOn : styles.chipTxt]}>
-              Every Day
+              {t('addHabit.everyDay')}
             </Text>
           </Pressable>
           <Pressable
@@ -151,7 +153,7 @@ export default function AddHabitModal() {
             style={[styles.chip, !freqDaily && styles.chipOn]}
           >
             <Text style={[typography.body, !freqDaily ? styles.chipTxtOn : styles.chipTxt]}>
-              Specific Days
+              {t('addHabit.specificDays')}
             </Text>
           </Pressable>
         </View>
@@ -163,7 +165,7 @@ export default function AddHabitModal() {
         ) : null}
 
         <View style={styles.rowBetween}>
-          <Text style={[typography.body, styles.lbl]}>Reminder</Text>
+          <Text style={[typography.body, styles.lbl]}>{t('addHabit.reminder')}</Text>
           <Switch
             value={reminderOn}
             onValueChange={setReminderOn}
@@ -174,14 +176,14 @@ export default function AddHabitModal() {
 
         {reminderOn ? (
           <View style={styles.timeRow}>
-            <Text style={[typography.caption, styles.timeLbl]}>Hour (0–23)</Text>
+            <Text style={[typography.caption, styles.timeLbl]}>{t('addHabit.hour')}</Text>
             <Input
               value={hour}
               onChangeText={(t) => setHour(t.replace(/[^\d]/g, '').slice(0, 2))}
               keyboardType="number-pad"
               style={styles.timeInput}
             />
-            <Text style={[typography.caption, styles.timeLbl]}>Minute (0–59)</Text>
+            <Text style={[typography.caption, styles.timeLbl]}>{t('addHabit.minute')}</Text>
             <Input
               value={minute}
               onChangeText={(t) => setMinute(t.replace(/[^\d]/g, '').slice(0, 2))}
@@ -191,101 +193,103 @@ export default function AddHabitModal() {
           </View>
         ) : null}
 
-        <Button title="Save" onPress={save} disabled={invalid} style={styles.save} />
+        <Button title={t('addHabit.save')} onPress={save} disabled={invalid} style={styles.save} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  topSpacer: {
-    width: 40,
-  },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    color: colors.textPrimary,
-  },
-  closeBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeTxt: {
-    color: colors.textSecondary,
-    fontSize: 28,
-    lineHeight: 32,
-  },
-  form: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
-  count: {
-    color: colors.textMuted,
-    textAlign: 'right',
-    marginTop: -spacing.sm,
-    marginBottom: spacing.md,
-  },
-  lbl: {
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  freqRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  chip: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-  },
-  chipOn: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipTxt: {
-    color: colors.textSecondary,
-  },
-  chipTxtOn: {
-    color: colors.background,
-    fontWeight: '600',
-  },
-  dpWrap: {
-    marginBottom: spacing.md,
-  },
-  rowBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  timeRow: {
-    marginBottom: spacing.lg,
-  },
-  timeLbl: {
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  timeInput: {
-    marginBottom: spacing.sm,
-  },
-  save: {
-    marginTop: spacing.md,
-  },
-});
+function makeStyles({ colors, spacing, radii }) {
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    topSpacer: {
+      width: 40,
+    },
+    title: {
+      flex: 1,
+      textAlign: 'center',
+      color: colors.textPrimary,
+    },
+    closeBtn: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeTxt: {
+      color: colors.textSecondary,
+      fontSize: 28,
+      lineHeight: 32,
+    },
+    form: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.xxl,
+    },
+    count: {
+      color: colors.textMuted,
+      textAlign: 'right',
+      marginTop: -spacing.sm,
+      marginBottom: spacing.md,
+    },
+    lbl: {
+      color: colors.textPrimary,
+      marginBottom: spacing.sm,
+    },
+    freqRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    chip: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: 'center',
+    },
+    chipOn: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    chipTxt: {
+      color: colors.textSecondary,
+    },
+    chipTxtOn: {
+      color: colors.background,
+      fontWeight: '600',
+    },
+    dpWrap: {
+      marginBottom: spacing.md,
+    },
+    rowBetween: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    timeRow: {
+      marginBottom: spacing.lg,
+    },
+    timeLbl: {
+      color: colors.textSecondary,
+      marginBottom: spacing.xs,
+    },
+    timeInput: {
+      marginBottom: spacing.sm,
+    },
+    save: {
+      marginTop: spacing.md,
+    },
+  });
+}

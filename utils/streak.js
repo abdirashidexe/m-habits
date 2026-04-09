@@ -49,6 +49,15 @@ export function calculateStreak(habitId, logs, habit, refDate = now()) {
   const completedYesterday = dueYesterday && isCompletedOnDate(habitId, yesterdayStr, logs);
 
   if (dueYesterday && !completedYesterday) {
+    if (completedToday) {
+      return {
+        currentStreak: 1,
+        longestStreak: longestStreakEverForHabit(habitId, habit, logs),
+        completedToday: true,
+        dueToday: true,
+        atRisk: false,
+      };
+    }
     if (dueToday && !completedToday) {
       return {
         currentStreak: 0,
@@ -234,19 +243,6 @@ export function longestDailyStreakFromPredicate(isCompletedOnDateStr, refDate) {
 }
 
 /**
- * @typedef {{ date: string, pagesRead: number }} QuranLog
- * @param {QuranLog[]} quranLogs
- * @param {Date} [refDate]
- */
-export function calculateQuranStreakState(quranLogs, refDate = now()) {
-  const byDate = new Map(quranLogs.map((q) => [q.date, q]));
-  return calculateDailyStreak((ds) => {
-    const log = byDate.get(ds);
-    return Boolean(log && log.pagesRead >= 1);
-  }, refDate);
-}
-
-/**
  * @param {Habit[]} habits
  * @param {HabitLog[]} logs
  * @returns {number} Max of longestStreak ever across custom habits
@@ -257,22 +253,6 @@ export function maxLongestStreakAcrossHabits(habits, logs) {
     const ls = longestStreakEverForHabit(h.id, h, logs);
     if (ls > m) m = ls;
   }
-  return m;
-}
-
-/**
- * Overall "longest streak" badge: max among habits and Quran.
- * @param {Habit[]} habits
- * @param {HabitLog[]} logs
- * @param {QuranLog[]} quranLogs
- */
-export function overallLongestStreakRecord(habits, logs, quranLogs) {
-  let m = maxLongestStreakAcrossHabits(habits, logs);
-  const qLong = longestDailyStreakFromPredicate((ds) => {
-    const log = quranLogs.find((q) => q.date === ds);
-    return Boolean(log && log.pagesRead >= 1);
-  }, now());
-  if (qLong > m) m = qLong;
   return m;
 }
 
