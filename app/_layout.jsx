@@ -14,19 +14,19 @@ import { AppProvider, useApp } from '../context/AppContext';
 import { useNurTheme } from '../hooks/useNurTheme';
 
 export default function RootLayout() {
-  useEffect(() => {
-    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+  // useEffect(() => {
+  //   Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
-    // Platform-specific API keys
-    const iosApiKey = process.env.REVENUE_CAT_IOS_API_KEY;
-    const androidApiKey = process.env.REVENUE_CAT_ANDROID_API_KEY;
+  //   // Platform-specific API keys
+  //   const iosApiKey = process.env.REVENUE_CAT_IOS_API_KEY;
+  //   const androidApiKey = process.env.REVENUE_CAT_ANDROID_API_KEY;
 
-    if (Platform.OS === 'ios') {
-       Purchases.configure({apiKey: iosApiKey});
-    } else if (Platform.OS === 'android') {
-       Purchases.configure({apiKey: androidApiKey});
-    }
-  }, []);
+  //   if (Platform.OS === 'ios') {
+  //      Purchases.configure({ apiKey: iosApiKey });
+  //   } else if (Platform.OS === 'android') {
+  //      Purchases.configure({ apiKey: androidApiKey });
+  //   }
+  // }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

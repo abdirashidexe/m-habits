@@ -182,8 +182,6 @@ class BlurErrorBoundary extends React.Component {
     return { hasError: true };
   }
   componentDidCatch(error) {
-    // eslint-disable-next-line no-console
-    console.log('[Nur] Celebration blur: FAIL', error);
   }
   render() {
     if (this.state.hasError) return null;
@@ -201,8 +199,6 @@ function SafeBlur() {
       (Boolean(UIManager.getViewManagerConfig('ExpoBlurView')) ||
         Boolean(UIManager.getViewManagerConfig('ViewManagerAdapter_ExpoBlur_ExpoBlurView')));
     if (!hasConfig) {
-      // eslint-disable-next-line no-console
-      console.log('[Nur] Celebration blur: FAIL (native view manager not registered)');
       return null;
     }
 
@@ -210,10 +206,7 @@ function SafeBlur() {
     const { BlurView } = require('expo-blur');
 
     function BlurProbe() {
-      useEffect(() => {
-        // eslint-disable-next-line no-console
-        console.log('[Nur] Celebration blur: SUCCESS');
-      }, []);
+      useEffect(() => {}, []);
       return <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFillObject} />;
     }
 
@@ -223,8 +216,6 @@ function SafeBlur() {
       </BlurErrorBoundary>
     );
   } catch (e) {
-    // eslint-disable-next-line no-console
-    console.log('[Nur] Celebration blur: FAIL', e);
     return null;
   }
 }

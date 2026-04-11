@@ -17,6 +17,8 @@ function isValidYmd(s) {
   return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s.trim());}
 
 export default function DevToolsModal() {
+  if (!__DEV__) return null;
+
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
