@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useNurTheme } from '../hooks/useNurTheme';
+import { useFajrTheme } from '../hooks/useFajrTheme';
 
 /**
  * @param {{ title: string, message: string, style?: object }} props
  */
 export function EmptyState({ title, message, style }) {
-  const { colors, typography, spacing } = useNurTheme();
+  const { colors, typography, spacing } = useFajrTheme();
   const styles = makeStyles({ colors, typography, spacing });
   return (
     <View style={[styles.wrap, style]}>

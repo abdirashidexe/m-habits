@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { getColors, makeShadows, typography, spacing, radii } from '../theme';
 
-export function useNurTheme() {
+export function useFajrTheme() {
   const { state } = useApp();
   const mode = state.userProfile.darkMode ? 'dark' : 'light';
   const colorTheme = state.userProfile.colorTheme || 'main';

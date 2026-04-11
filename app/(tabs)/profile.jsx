@@ -5,10 +5,11 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -17,9 +18,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Button } from '../../components/Button';
-import { PremiumBadge } from '../../components/PremiumBadge';
+import { PlusBadge } from '../../components/PlusBadge';
+import { ThemedSwitch } from '../../components/ThemedSwitch';
 import { ActionTypes, useApp } from '../../context/AppContext';
-import { useNurTheme } from '../../hooks/useNurTheme';
+import { useFajrTheme } from '../../hooks/useFajrTheme';
 import { getDateFnsLocale } from '../../utils/dateLocale';
 import { cancelAllLocalNotifications } from '../../utils/notifications';
 import * as storage from '../../utils/storage';
@@ -30,15 +32,59 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, dispatch } = useApp();
-  const { colors, radii, shadows, spacing, typography } = useNurTheme();
+  const { colors, radii, shadows, spacing, typography } = useFajrTheme();
   const styles = makeStyles({ colors, radii, spacing });
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(state.userProfile.name);
+  const nameOpacity = useRef(new Animated.Value(1)).current;
   const tapCount = useRef(0);
   const tapTimer = useRef(null);
 
+  const nameFadeMs = 150;
+  const nameFadeEasing = Easing.in(Easing.linear);
+
+  const beginNameEdit = () => {
+    setNameDraft(state.userProfile.name);
+    Animated.timing(nameOpacity, {
+      toValue: 0,
+      duration: nameFadeMs,
+      easing: nameFadeEasing,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      setEditingName(true);
+      nameOpacity.setValue(0);
+      Animated.timing(nameOpacity, {
+        toValue: 1,
+        duration: nameFadeMs,
+        easing: nameFadeEasing,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
+  const finishNameEdit = () => {
+    Animated.timing(nameOpacity, {
+      toValue: 0,
+      duration: nameFadeMs,
+      easing: nameFadeEasing,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      dispatch({ type: ActionTypes.SET_USER_NAME, payload: nameDraft.trim() });
+      setEditingName(false);
+      nameOpacity.setValue(0);
+      Animated.timing(nameOpacity, {
+        toValue: 1,
+        duration: nameFadeMs,
+        easing: nameFadeEasing,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
   const version = Constants.expoConfig?.version || '1.0.0';
-  const premium = state.userProfile.isPremium;
+  const plus = state.userProfile.isPlus;
   const darkMode = Boolean(state.userProfile.darkMode);
   const dateLocale = useMemo(
     () => getDateFnsLocale(state.userProfile.language || 'en'),
@@ -70,13 +116,8 @@ export default function ProfileScreen() {
     }
   };
 
-  const saveName = () => {
-    dispatch({ type: ActionTypes.SET_USER_NAME, payload: nameDraft.trim() });
-    setEditingName(false);
-  };
-
-  const unlockPremium = () => {
-    Alert.alert(t('profile.comingSoonTitle'), t('profile.comingSoonPayment'), [{ text: t('common.ok') }]);
+  const unlockPlus = () => {
+    router.push('/modals/paywall');
   };
 
   const reminderDefaults = () => {
@@ -103,7 +144,7 @@ export default function ProfileScreen() {
               style: 'destructive',
               onPress: async () => {
                   await cancelAllLocalNotifications();
-                  await storage.clearAllNurKeys();
+                  await storage.clearAllFajrKeys();
                   dispatch({ type: ActionTypes.RESET_ALL });
                   router.replace('/onboarding');
                 },
@@ -126,28 +167,30 @@ export default function ProfileScreen() {
           <View style={styles.avatar}>
             <Text style={[typography.displayMedium, styles.avatarTxt]}>{initial}</Text>
           </View>
-          {editingName ? (
-            <View style={styles.nameEdit}>
-              <TextInput
-                value={nameDraft}
-                onChangeText={setNameDraft}
-                style={[typography.heading, styles.nameInput]}
-                placeholder={t('profile.yourName')}
-                placeholderTextColor={colors.textMuted}
-                maxLength={40}
-              />
-              <Pressable onPress={saveName} style={styles.saveName}>
-                <Text style={[typography.caption, styles.saveNameTxt]}>{t('common.save')}</Text>
+          <Animated.View style={[styles.nameBlock, { opacity: nameOpacity }]}>
+            {editingName ? (
+              <View style={styles.nameEdit}>
+                <TextInput
+                  value={nameDraft}
+                  onChangeText={setNameDraft}
+                  style={[typography.heading, styles.nameInput]}
+                  placeholder={t('profile.yourName')}
+                  placeholderTextColor={colors.textMuted}
+                  maxLength={40}
+                />
+                <Pressable onPress={finishNameEdit} style={styles.saveName}>
+                  <Text style={[typography.caption, styles.saveNameTxt]}>{t('common.save')}</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable onPress={beginNameEdit}>
+                <Text style={[typography.heading, styles.name]}>
+                  {state.userProfile.name || t('profile.yourName')}
+                </Text>
+                <Text style={[typography.caption, styles.tapHint]}>{t('profile.tapToEdit')}</Text>
               </Pressable>
-            </View>
-          ) : (
-            <Pressable onPress={() => { setNameDraft(state.userProfile.name); setEditingName(true); }}>
-              <Text style={[typography.heading, styles.name]}>
-                {state.userProfile.name || t('profile.yourName')}
-              </Text>
-              <Text style={[typography.caption, styles.tapHint]}>{t('profile.tapToEdit')}</Text>
-            </Pressable>
-          )}
+            )}
+          </Animated.View>
           <Text style={[typography.bodySmall, styles.meta]}>
             {t('profile.memberSince', { date: joinedLabel })}
           </Text>
@@ -156,24 +199,24 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        {!premium ? (
-          <View style={[styles.premiumCard, shadows.card]}>
-            <PremiumBadge />
-            <Text style={[typography.subheading, styles.premTitle]}>{t('stats.premiumTitle')}</Text>
+        {!plus ? (
+          <View style={[styles.plusCard, shadows.card]}>
+            <PlusBadge />
+            <Text style={[typography.subheading, styles.premTitle]}>{t('stats.plusTitle')}</Text>
             {[1, 2, 3, 4].map((i) => (
               <Text key={i} style={[typography.bodySmall, styles.benefit]}>
                 • {t(`profile.benefit${i}`)}
               </Text>
             ))}
-            <Button title={t('profile.unlockPremium')} onPress={unlockPremium} style={styles.premBtn} />
+            <Button compact title={t('profile.unlockPlus')} onPress={unlockPlus} style={styles.premBtn} />
           </View>
         ) : (
-          <View style={[styles.premiumOn, shadows.card]}>
-            <Text style={[typography.subheading, styles.premOnTxt]}>{t('profile.premiumStar')}</Text>
-            {state.userProfile.premiumSince && isValid(parseISO(state.userProfile.premiumSince)) ? (
+          <View style={[styles.plusOn, shadows.card]}>
+            <Text style={[typography.subheading, styles.premOnTxt]}>{t('profile.plusStar')}</Text>
+            {state.userProfile.plusSince && isValid(parseISO(state.userProfile.plusSince)) ? (
               <Text style={[typography.caption, styles.premSince]}>
-                {t('profile.premiumSince', {
-                  date: format(parseISO(state.userProfile.premiumSince), 'MMMM d, yyyy', {
+                {t('profile.plusSince', {
+                  date: format(parseISO(state.userProfile.plusSince), 'MMMM d, yyyy', {
                     locale: dateLocale,
                   }),
                 })}
@@ -185,11 +228,9 @@ export default function ProfileScreen() {
         <Text style={[typography.heading, styles.section]}>{t('profile.settings')}</Text>
         <View style={[styles.row, styles.cardRow]}>
           <Text style={[typography.body, styles.rowLbl]}><FontAwesome6 name="moon" size={16} color={colors.textPrimary} /> {t('profile.darkMode')}</Text>
-          <Switch
+          <ThemedSwitch
             value={darkMode}
             onValueChange={(v) => dispatch({ type: ActionTypes.SET_DARK_MODE, payload: v })}
-            trackColor={{ false: colors.divider, true: colors.primaryLight }}
-            thumbColor={colors.background}
           />
         </View>
         <Pressable
@@ -208,11 +249,9 @@ export default function ProfileScreen() {
         </Pressable>
         <View style={[styles.row, styles.cardRow]}>
           <Text style={[typography.body, styles.rowLbl]}><FontAwesome6 name="bell" size={16} color={colors.textPrimary} /> {t('profile.notifications')}</Text>
-          <Switch
+          <ThemedSwitch
             value={state.masterNotificationsEnabled}
             onValueChange={(v) => dispatch({ type: ActionTypes.SET_MASTER_NOTIFICATIONS, payload: v })}
-            trackColor={{ false: colors.divider, true: colors.primaryLight }}
-            thumbColor={colors.background}
           />
         </View>
         <Pressable style={[styles.row, styles.cardRow]} onPress={reminderDefaults}>
@@ -282,6 +321,12 @@ function makeStyles({ colors, radii, spacing }) {
       marginBottom: 0,
       lineHeight: 28,
     },
+    nameBlock: {
+      width: '100%',
+      minHeight: 76,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     name: {
       color: colors.textPrimary,
       textAlign: 'center',
@@ -294,7 +339,9 @@ function makeStyles({ colors, radii, spacing }) {
     nameEdit: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: spacing.sm,
+      width: '100%',
     },
     nameInput: {
       color: colors.textPrimary,
@@ -318,12 +365,12 @@ function makeStyles({ colors, radii, spacing }) {
       marginTop: spacing.xs,
       textAlign: 'center',
     },
-    premiumCard: {
+    plusCard: {
       backgroundColor: colors.surfaceElevated,
       borderRadius: radii.lg,
       padding: spacing.md,
       borderWidth: 2,
-      borderColor: colors.premiumGold,
+      borderColor: colors.plusGold,
       marginBottom: spacing.lg,
     },
     premTitle: {
@@ -339,16 +386,16 @@ function makeStyles({ colors, radii, spacing }) {
     premBtn: {
       marginTop: spacing.md,
     },
-    premiumOn: {
+    plusOn: {
       backgroundColor: colors.surface,
       borderRadius: radii.lg,
       padding: spacing.md,
       borderWidth: 1,
-      borderColor: colors.premiumGold,
+      borderColor: colors.plusGold,
       marginBottom: spacing.lg,
     },
     premOnTxt: {
-      color: colors.premiumGold,
+      color: colors.plusGold,
     },
     premSince: {
       color: colors.textSecondary,

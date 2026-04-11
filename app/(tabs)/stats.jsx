@@ -8,25 +8,27 @@ import {
   startOfDay,
   startOfWeek
 } from 'date-fns';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PremiumBadge } from '../../components/PremiumBadge';
+import { PlusBadge } from '../../components/PlusBadge';
 import { useApp } from '../../context/AppContext';
-import { useNurTheme } from '../../hooks/useNurTheme';
+import { useFajrTheme } from '../../hooks/useFajrTheme';
 import { toLocalDateString } from '../../utils/dates';
 import { now } from '../../utils/now';
 import { isHabitDueOnDate, longestStreakEverForHabit } from '../../utils/streak';
 
 export default function StatsScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { state } = useApp();
-  const { colors, radii, shadows, spacing, typography } = useNurTheme();
+  const { colors, radii, shadows, spacing, typography } = useFajrTheme();
   const styles = makeStyles({ colors, radii, spacing });
-  const premium = state.userProfile.isPremium;
+  const plus = state.userProfile.isPlus;
   const [today, setToday] = useState(() => now());
   useFocusEffect(
     useCallback(() => {
@@ -89,7 +91,7 @@ export default function StatsScreen() {
   }, [weekDays, customHabits, state.habitLogs, today]);
 
   const medalIcons = /** @type {{ name: any, color: string }[]} */ ([
-    { name: 'trophy', color: colors.premiumGold },
+    { name: 'trophy', color: colors.plusGold },
     { name: 'medal', color: colors.textSecondary },
     { name: 'award', color: colors.textMuted },
   ]);
@@ -158,12 +160,28 @@ export default function StatsScreen() {
             </View>
           ))}
         </View>
-        {!premium ? (
-          <View style={[styles.premiumCard, shadows.card]}>
-            <PremiumBadge />
-            <Text style={[typography.subheading, styles.premTitle]}>{t('stats.premiumTitle')}</Text>
-            <Text style={[typography.bodySmall, styles.premHint]}>{t('stats.premiumHint')}</Text>
-          </View>
+        {!plus ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('profile.unlockPlus')}
+            onPress={() => router.push('/modals/paywall')}
+            style={({ pressed }) => [
+              styles.plusCard,
+              shadows.card,
+              pressed && styles.plusCardPressed,
+            ]}
+          >
+            <PlusBadge />
+            <Text style={[typography.subheading, styles.premTitle]}>{t('stats.plusTitle')}</Text>
+            {[1, 2, 3, 4].map((i) => (
+              <Text key={i} style={[typography.bodySmall, styles.benefit]}>
+                • {t(`profile.benefit${i}`)}
+              </Text>
+            ))}
+            <View style={styles.premCta}>
+              <Text style={[typography.body, styles.premCtaTxt]}>{t('profile.unlockPlus')}</Text>
+            </View>
+          </Pressable>
         ) : null}
       </View>
 
@@ -291,22 +309,43 @@ function makeStyles({ colors, radii, spacing }) {
       color: colors.textMuted,
       marginTop: spacing.sm,
     },
-    premiumCard: {
+    plusCard: {
       backgroundColor: colors.surfaceElevated,
       borderRadius: radii.lg,
       padding: spacing.md,
       borderWidth: 2,
-      borderColor: colors.premiumGold,
+      borderColor: colors.plusGold,
       marginTop: spacing.md,
+    },
+    plusCardPressed: {
+      opacity: 0.92,
     },
     premTitle: {
       color: colors.textPrimary,
       marginTop: spacing.sm,
       marginBottom: spacing.sm,
     },
-    premHint: {
+    benefit: {
       color: colors.textSecondary,
+      marginBottom: spacing.xs,
       lineHeight: 20,
+    },
+    premCta: {
+      alignSelf: 'center',
+      width: 240,
+      maxWidth: '88%',
+      marginTop: spacing.md,
+      paddingVertical: 8,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radii.lg,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    premCtaTxt: {
+      color: colors.background,
+      fontWeight: '600',
+      textAlign: 'center',
     },
   });
 }

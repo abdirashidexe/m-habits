@@ -11,7 +11,7 @@ import '../i18n';
 import { useTranslation } from 'react-i18next';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import { AppProvider, useApp } from '../context/AppContext';
-import { useNurTheme } from '../hooks/useNurTheme';
+import { useFajrTheme } from '../hooks/useFajrTheme';
 
 export default function RootLayout() {
   // useEffect(() => {
@@ -38,7 +38,7 @@ export default function RootLayout() {
 }
 
 function RootLayoutInner() {
-  const { mode, colors, spacing } = useNurTheme();
+  const { mode, colors, spacing } = useFajrTheme();
   const styles = makeStyles({ colors, spacing });
   const navigationTheme = useMemo(() => {
     const base = mode === 'dark' ? DarkTheme : DefaultTheme;
@@ -82,7 +82,7 @@ function RootLayoutInner() {
 function DevModeBanner() {
   const { state } = useApp();
   const { t } = useTranslation();
-  const { colors, typography, spacing } = useNurTheme();
+  const { colors, typography, spacing } = useFajrTheme();
   const styles = makeStyles({ colors, spacing });
   const insets = useSafeAreaInsets();
   if (!state.devDateOverride) return null;

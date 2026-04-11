@@ -15,9 +15,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '../../components/EmptyState';
-import { PremiumBadge } from '../../components/PremiumBadge';
+import { PlusBadge } from '../../components/PlusBadge';
 import { ActionTypes, useApp } from '../../context/AppContext';
-import { useNurTheme } from '../../hooks/useNurTheme';
+import { useFajrTheme } from '../../hooks/useFajrTheme';
 import { cancelHabitReminder } from '../../utils/notifications';
 import { now } from '../../utils/now';
 import { calculateStreak } from '../../utils/streak';
@@ -27,9 +27,9 @@ export default function HabitsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, dispatch } = useApp();
-  const { colors, typography, spacing, radii, shadows } = useNurTheme();
+  const { colors, typography, spacing, radii, shadows } = useFajrTheme();
   const styles = makeStyles({ colors, spacing, radii });
-  const premium = state.userProfile.isPremium;
+  const plus = state.userProfile.isPlus;
   const [reorderMode, setReorderMode] = React.useState(false);
   const glowPulse = useRef(new Animated.Value(0)).current;
   const glowOpacity = useMemo(
@@ -83,8 +83,8 @@ export default function HabitsScreen() {
   };
 
   const openAdd = () => {
-    if (!premium && customHabits.length >= 3) {
-      Alert.alert(t('habits.premiumTitle'), t('habits.premiumLimitBody'), [{ text: t('common.ok') }]);
+    if (!plus && customHabits.length >= 3) {
+      Alert.alert(t('habits.plusTitle'), t('habits.plusLimitBody'), [{ text: t('common.ok') }]);
       return;
     }
     router.push('/modals/add-habit');
@@ -106,9 +106,7 @@ export default function HabitsScreen() {
 
   const openEdit = (h, locked) => {
     if (locked) {
-      Alert.alert(t('habits.premiumLockedTitle'), t('habits.premiumLockedBody'), [
-        { text: t('common.ok') },
-      ]);
+      router.push('/modals/paywall');
       return;
     }
     router.push({ pathname: '/modals/add-habit', params: { id: h.id } });
@@ -175,7 +173,7 @@ export default function HabitsScreen() {
         ) : null}
 
         {customHabits.map((h, index) => {
-            const locked = !premium && index >= 3;
+            const locked = !plus && index >= 3;
             const streak = calculateStreak(h.id, state.habitLogs, h, now());
             const RowWrap = locked ? Pressable : View;
             const rowWrapProps = locked
@@ -190,7 +188,7 @@ export default function HabitsScreen() {
                 <View style={styles.rowMain}>
                   <View style={styles.rowTop}>
                     <Text style={[typography.subheading, styles.name]}>{h.name}</Text>
-                    {locked ? <PremiumBadge compact /> : null}
+                    {locked ? <PlusBadge compact /> : null}
                   </View>
                   <Text style={[typography.caption, styles.meta]}>{freqLabel(h)}</Text>
                   <Text style={[typography.caption, styles.streak]}>
@@ -365,7 +363,7 @@ function makeStyles({ colors, spacing, radii }) {
     alignItems: 'center',
   },
   rowLocked: {
-    borderColor: colors.premiumGold,
+    borderColor: colors.plusGold,
     opacity: 0.85,
   },
   rowMain: {
@@ -411,7 +409,7 @@ function makeStyles({ colors, spacing, radii }) {
     padding: spacing.sm,
   },
   lock: {
-    color: colors.premiumGold,
+    color: colors.plusGold,
     fontSize: 22,
   },
   fab: {

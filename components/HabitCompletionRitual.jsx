@@ -13,7 +13,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 
-import { useNurTheme } from '../hooks/useNurTheme';
+import { useFajrTheme } from '../hooks/useFajrTheme';
 
 const PARTICLE_COUNT = 28;
 const REDUCE_MOTION_CLOSE_DELAY_MS = 900;
@@ -39,7 +39,7 @@ const VERTICAL_LIFT = 40;
  */
 export function HabitCompletionRitual({ visible, onFinished }) {
   const { t } = useTranslation();
-  const { colors, typography, spacing } = useNurTheme();
+  const { colors, typography, spacing } = useFajrTheme();
   const styles = makeStyles({ colors, spacing });
   const [reduceMotion, setReduceMotion] = useState(false);
   const [renderTick, setRenderTick] = useState(0);
@@ -71,7 +71,7 @@ export function HabitCompletionRitual({ visible, onFinished }) {
       return () => clearTimeout(t);
     }
 
-    const palette = [colors.primary, colors.accent, colors.premiumGold, colors.success];
+    const palette = [colors.primary, colors.accent, colors.plusGold, colors.success];
 
     const buildAngle = (index) => (index / PARTICLE_COUNT) * Math.PI * 2 + Math.random() * ANGLE_JITTER;
 
@@ -137,7 +137,7 @@ export function HabitCompletionRitual({ visible, onFinished }) {
         p.scale.stopAnimation();
       }
     };
-  }, [visible, reduceMotion, colors.primary, colors.accent, colors.premiumGold, colors.success]);
+  }, [visible, reduceMotion, colors.primary, colors.accent, colors.plusGold, colors.success]);
 
   if (!visible) return null;
 

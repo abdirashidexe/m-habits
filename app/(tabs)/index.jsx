@@ -9,7 +9,7 @@ import { HabitCard } from '../../components/HabitCard';
 import { HabitCompletionRitual } from '../../components/HabitCompletionRitual';
 import { MOTIVATION_QUOTE_COUNT } from '../../constants/motivation';
 import { ActionTypes, useApp } from '../../context/AppContext';
-import { useNurTheme } from '../../hooks/useNurTheme';
+import { useFajrTheme } from '../../hooks/useFajrTheme';
 import { getDateFnsLocale } from '../../utils/dateLocale';
 import { formatDateDisplay, formatHijriDisplay, getDayOfYear, toLocalDateString } from '../../utils/dates';
 import { now, nowIso } from '../../utils/now';
@@ -27,7 +27,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, dispatch } = useApp();
-  const { colors, radii, spacing, typography, shadows } = useNurTheme();
+  const { colors, radii, spacing, typography, shadows } = useFajrTheme();
   const styles = makeStyles({ colors, radii, spacing });
   const [today, setToday] = useState(() => now());
   useFocusEffect(

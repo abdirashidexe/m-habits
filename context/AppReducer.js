@@ -1,4 +1,5 @@
 import { coerceLanguageId } from '../constants/languages';
+import { COLOR_THEME_IDS } from '../theme';
 import { nowIso } from '../utils/now';
 
 /**
@@ -11,7 +12,7 @@ import { nowIso } from '../utils/now';
  * @property {boolean} reminderEnabled
  * @property {string | null} reminderTime
  * @property {string} createdAt
- * @property {boolean} isPremium
+ * @property {boolean} isPlus
  */
 
 /**
@@ -25,13 +26,13 @@ import { nowIso } from '../utils/now';
 /**
  * @typedef {Object} UserProfile
  * @property {string} name
- * @property {boolean} isPremium
- * @property {string | null} premiumSince
+ * @property {boolean} isPlus
+ * @property {string | null} plusSince
  * @property {string} joinedAt
  * @property {string} timezone
  * @property {boolean} darkMode
- * @property {'main' | 'pink' | 'blue'} colorTheme
- * @property {'en' | 'ar' | 'ur' | 'so'} language
+ * @property {'main' | 'pink' | 'blue' | 'red' | 'orange' | 'purple' | 'brown' | 'gray'} colorTheme
+ * @property {'en' | 'ar' | 'ur' | 'so' | 'id'} language
  */
 
 /**
@@ -48,8 +49,8 @@ import { nowIso } from '../utils/now';
 /** @type {UserProfile} */
 export const defaultUserProfile = {
   name: '',
-  isPremium: false,
-  premiumSince: null,
+  isPlus: false,
+  plusSince: null,
   joinedAt: '',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
   darkMode: false,
@@ -75,7 +76,7 @@ export const ActionTypes = {
   SET_DARK_MODE: 'SET_DARK_MODE',
   SET_COLOR_THEME: 'SET_COLOR_THEME',
   SET_LANGUAGE: 'SET_LANGUAGE',
-  SET_PREMIUM: 'SET_PREMIUM',
+  SET_PLUS: 'SET_PLUS',
   SET_MASTER_NOTIFICATIONS: 'SET_MASTER_NOTIFICATIONS',
   SET_DEV_DATE_OVERRIDE: 'SET_DEV_DATE_OVERRIDE',
   SET_HABITS: 'SET_HABITS',
@@ -142,8 +143,7 @@ export function appReducer(state, action) {
       };
     case ActionTypes.SET_COLOR_THEME: {
       const v = action.payload;
-      const colorTheme =
-        v === 'pink' || v === 'blue' || v === 'main' ? v : 'main';
+      const colorTheme = COLOR_THEME_IDS.includes(v) ? v : 'main';
       return {
         ...state,
         userProfile: {
@@ -160,15 +160,15 @@ export function appReducer(state, action) {
           language: coerceLanguageId(action.payload),
         },
       };
-    case ActionTypes.SET_PREMIUM: {
+    case ActionTypes.SET_PLUS: {
       const on = Boolean(action.payload);
       return {
         ...state,
         userProfile: {
           ...state.userProfile,
-          isPremium: on,
-          premiumSince: on
-            ? state.userProfile.premiumSince || nowIso()
+          isPlus: on,
+          plusSince: on
+            ? state.userProfile.plusSince || nowIso()
             : null,
         },
       };

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
-import { useNurTheme } from '../hooks/useNurTheme';
+import { useFajrTheme } from '../hooks/useFajrTheme';
 
 /**
  * @param {{
@@ -10,6 +10,7 @@ import { useNurTheme } from '../hooks/useNurTheme';
  *   disabled?: boolean,
  *   loading?: boolean,
  *   style?: object,
+ *   compact?: boolean,
  * }} props
  */
 export function Button({
@@ -19,8 +20,9 @@ export function Button({
   disabled = false,
   loading = false,
   style,
+  compact = false,
 }) {
-  const { colors, typography, spacing, radii } = useNurTheme();
+  const { colors, typography, spacing, radii } = useFajrTheme();
   const styles = makeStyles({ colors, typography, spacing, radii });
   const isPrimary = variant === 'primary';
   const isGhost = variant === 'ghost';
@@ -31,6 +33,7 @@ export function Button({
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.base,
+        compact && styles.compact,
         isPrimary && styles.primary,
         variant === 'secondary' && styles.secondary,
         isGhost && styles.ghost,
@@ -90,6 +93,14 @@ function makeStyles({ colors, typography, spacing, radii }) {
   },
   pressed: {
     opacity: 0.88,
+  },
+  compact: {
+    alignSelf: 'center',
+    width: 240,
+    maxWidth: '88%',
+    paddingVertical: 8,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.lg,
   },
   text: {
     textAlign: 'center',

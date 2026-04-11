@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const KEYS = {
-  habits: 'nur_habits',
-  habitLogs: 'nur_habit_logs',
-  userProfile: 'nur_user_profile',
-  onboarded: 'nur_onboarded',
-  masterNotifications: 'nur_master_notifications',
-  devDate: 'nur_dev_date',
+  habits: 'fajr_habits',
+  habitLogs: 'fajr_habit_logs',
+  userProfile: 'fajr_user_profile',
+  onboarded: 'fajr_onboarded',
+  masterNotifications: 'fajr_master_notifications',
+  devDate: 'fajr_dev_date',
 };
 
 /**
@@ -37,6 +37,6 @@ export async function writeJson(key, value) {
 /**
  * @returns {Promise<void>}
  */
-export async function clearAllNurKeys() {
+export async function clearAllFajrKeys() {
   await AsyncStorage.multiRemove(Object.values(KEYS));
 }

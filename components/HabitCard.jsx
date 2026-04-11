@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useNurTheme } from '../hooks/useNurTheme';
+import { useFajrTheme } from '../hooks/useFajrTheme';
 import { ConfettiBurst } from './ConfettiBurst';
 
 /**
@@ -17,7 +17,7 @@ import { ConfettiBurst } from './ConfettiBurst';
  */
 export function HabitCard({ name, streak, atRisk, completed, suppressConfettiOnComplete = false, onToggle }) {
   const { t } = useTranslation();
-  const { colors, typography, spacing, radii, shadows } = useNurTheme();
+  const { colors, typography, spacing, radii, shadows } = useFajrTheme();
   const styles = makeStyles({ colors, typography, spacing, radii });
   const fire = streak > 2;
   const [confettiOn, setConfettiOn] = useState(false);
@@ -39,7 +39,7 @@ export function HabitCard({ name, streak, atRisk, completed, suppressConfettiOnC
     >
       <ConfettiBurst
         active={confettiOn}
-        colors={[colors.primary, colors.accent, colors.premiumGold, colors.success]}
+        colors={[colors.primary, colors.accent, colors.plusGold, colors.success]}
         onDone={() => setConfettiOn(false)}
         durationMs={820}
         style={styles.confettiSmallOrigin}

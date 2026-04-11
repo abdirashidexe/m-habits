@@ -45,10 +45,10 @@
     "dayShortFri": "جمع",
     "dayShortSat": "ہف",
     "streak": "سلسلہ {{count}}",
-    "premiumTitle": "نور پریمیم",
-    "premiumLimitBody": "مفت اکاؤنٹ میں 3 عادتیں۔ لامحدود کے لیے پریمیم کھولیں۔",
-    "premiumLockedTitle": "نور پریمیم",
-    "premiumLockedBody": "مفت پلان پر یہ عادت بند ہے۔ لامحدود کے لیے پریمیم۔",
+    "plusTitle": "فجر پلس",
+    "plusLimitBody": "مفت اکاؤنٹ میں 3 عادتیں۔ لامحدود کے لیے پلس کھولیں۔",
+    "plusLockedTitle": "فجر پلس",
+    "plusLockedBody": "مفت پلان پر یہ عادت بند ہے۔ لامحدود کے لیے پلس۔",
     "deleteTitle": "عادت حذف",
     "deleteMsg": "«{{name}}» ہٹائیں؟ واپس نہیں ہوگا۔",
     "a11yReorderDone": "ترتیب مکمل",
@@ -74,8 +74,8 @@
     "dayLetterThu": "ج",
     "dayLetterFri": "ج",
     "dayLetterSat": "ہ",
-    "premiumTitle": "نور پریمیم",
-    "premiumHint": "مفت میں یہ ہفتہ۔ پریمیم میں گہری تاریخ۔"
+    "plusTitle": "فجر پلس",
+    "plusHint": "مفت میں یہ ہفتہ۔ پلس میں گہری تاریخ۔"
   },
   "profile": {
     "title": "پروفائل",
@@ -92,11 +92,11 @@
     "reminderDefaults": "یاد دہانی ڈیفالٹ",
     "resetAll": "سب ڈیٹا مٹائیں",
     "about": "متعلق",
-    "aboutBody": "نور قرآن اور روزانہ عادات کا پرسکون ساتھی ہے۔ بغیر نیٹ کے، اپنی رفتار سے، اخلاص کے ساتھ۔",
+    "aboutBody": "فجر قرآن اور روزانہ عادات کا پرسکون ساتھی ہے۔ بغیر نیٹ کے، اپنی رفتار سے، اخلاص کے ساتھ۔",
     "privacyLink": "رازداری (جلد لنک)",
-    "unlockPremium": "نور پریمیم کھولیں",
-    "premiumSince": "{{date}} سے",
-    "premiumStar": "✦ نور پریمیم",
+    "unlockPlus": "فجر پلس کھولیں",
+    "plusSince": "{{date}} سے",
+    "plusStar": "✦ فجر پلس",
     "benefit1": "لامحدود عادتیں",
     "benefit2": "مکمل تاریخ (30 دن اور ہمہ وقت)",
     "benefit3": "سلسلہ تحفظ (جلد)",
@@ -114,8 +114,8 @@
     "resetSureMsg": "واپس نہیں۔",
     "eraseAll": "سب مٹا دیں"
   },
-  "premium": {
-    "badge": "✦ پریمیم"
+  "plus": {
+    "badge": "✦ پلس"
   },
   "addHabit": {
     "newTitle": "نئی عادت",
@@ -130,26 +130,31 @@
     "hour": "گھنٹہ (0–23)",
     "minute": "منٹ (0–59)",
     "save": "محفوظ",
-    "premiumTitle": "نور پریمیم",
-    "premiumBody": "مفت میں 3 عادتیں۔ لامحدود کے لیے پریمیم۔"
+    "plusTitle": "فجر پلس",
+    "plusBody": "مفت میں 3 عادتیں۔ لامحدود کے لیے پلس۔"
   },
   "onboarding": {
-    "title": "نور",
+    "title": "فجر",
     "tagline": "برکت بھرے دنیا کے لیے آپ کا روزانہ ساتھی",
-    "continue": "جاری",
+    "continue": "اگلا",
     "chooseLanguage": "زبان چنیں",
     "languageHint": "پروفائل سے کسی وقت بدل سکتے ہیں۔",
     "trackTitle": "جو اہم ہے ٹریک کریں",
-    "trackBody": "نور قرآن کے روزانہ ہدف اور اپنی راہ کی عادتیں بنانے میں مدد کرتا ہے۔",
+    "trackBody": "فجر قرآن کے روزانہ ہدف اور اپنی راہ کی عادتیں بنانے میں مدد کرتا ہے۔",
     "nameQuestion": "آپ کو کیا کہیں؟",
     "namePlaceholder": "آپ کا نام",
-    "getStarted": "شروع کریں"
+    "getStarted": "شروع"
   },
   "appColors": {
     "title": "ایپ کے رنگ",
     "pink": "گلابی",
     "main": "بنیادی",
     "blue": "نیلا",
+    "red": "سرخ",
+    "orange": "نارنجی",
+    "purple": "جامنی",
+    "brown": "بھورا",
+    "gray": "گہرا سرمئی",
     "default": "ڈیفالٹ"
   },
   "languageModal": {
@@ -158,7 +163,7 @@
   "devTools": {
     "title": "ڈیولپر ٹولز",
     "dateOverride": "تاریخ اووررائیڈ",
-    "dateHelp": "`nur_dev_date` سیٹ کریں۔ خالی کریں بند کرنے کو۔",
+    "dateHelp": "`fajr_dev_date` سیٹ کریں۔ خالی کریں بند کرنے کو۔",
     "overrideLabel": "تاریخ (YYYY-MM-DD)",
     "overridePh": "2026-04-07",
     "apply": "لگائیں",
@@ -186,7 +191,7 @@
   },
   "notifications": {
     "reminderBody": "سلسلہ نہ توڑیں — آج لاگ کریں۔",
-    "channelName": "نور یاد دہانیاں"
+    "channelName": "فجر یاد دہانیاں"
   },
   "dates": {
     "hijri": "{{day}} {{month}} {{year}} {{ah}}",

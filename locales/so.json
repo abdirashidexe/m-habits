@@ -45,10 +45,10 @@
     "dayShortFri": "Jim",
     "dayShortSat": "Sab",
     "streak": "Xiriir {{count}}",
-    "premiumTitle": "Nur Premium",
-    "premiumLimitBody": "Akoonnada bilaash waxay u horseedaan 3 caado. Fur Premium si aan xad lahayn.",
-    "premiumLockedTitle": "Nur Premium",
-    "premiumLockedBody": "Caadadan waxaa ku xiran qorshaha bilaash. Fur Premium si aad u maamusho.",
+    "plusTitle": "Fajr Plus",
+    "plusLimitBody": "Akoonnada bilaash waxay u horseedaan 3 caado. Fur Plus si aan xad lahayn.",
+    "plusLockedTitle": "Fajr Plus",
+    "plusLockedBody": "Caadadan waxaa ku xiran qorshaha bilaash. Fur Plus si aad u maamusho.",
     "deleteTitle": "Tirtir caado",
     "deleteMsg": "Ka saar \"{{name}}\"? Lama celin karo.",
     "a11yReorderDone": "Kala horreyntii way dhammaatay",
@@ -74,8 +74,8 @@
     "dayLetterThu": "Kh",
     "dayLetterFri": "J",
     "dayLetterSat": "S",
-    "premiumTitle": "Nur Premium",
-    "premiumHint": "Qorshaha bilaash wuxuu muujiyaa toddobaadkan. Premium wuxuu ku darayaa taariikh qoto dheer."
+    "plusTitle": "Fajr Plus",
+    "plusHint": "Qorshaha bilaash wuxuu muujiyaa toddobaadkan. Plus wuxuu ku darayaa taariikh qoto dheer."
   },
   "profile": {
     "title": "Profile",
@@ -92,11 +92,11 @@
     "reminderDefaults": "Xusuusin caadiga ah",
     "resetAll": "Tirtir dhammaan xogta",
     "about": "Ku saabsan",
-    "aboutBody": "Nur waa saaxiib xasilloon oo Quraanka iyo caadooyinka maalinlaha ah. Waxaa loogu talagalay inuu kaa caawiyo inaad si daacad ah u joogtid, adigoon internet lahayn.",
+    "aboutBody": "Fajr waa saaxiib xasilloon oo Quraanka iyo caadooyinka maalinlaha ah. Waxaa loogu talagalay inuu kaa caawiyo inaad si daacad ah u joogtid, adigoon internet lahayn.",
     "privacyLink": "Siyaasadda asturnaanta (link dhawaan)",
-    "unlockPremium": "Fur Nur Premium",
-    "premiumSince": "Tan iyo {{date}}",
-    "premiumStar": "✦ Nur Premium",
+    "unlockPlus": "Fur Fajr Plus",
+    "plusSince": "Tan iyo {{date}}",
+    "plusStar": "✦ Fajr Plus",
     "benefit1": "Caadooyin aan xad lahayn",
     "benefit2": "Taariikh buuxa (30 maalmood & dhammaan waqtiyada)",
     "benefit3": "Ilaalinta xiriirka (dhawaan)",
@@ -114,8 +114,8 @@
     "resetSureMsg": "Lama celin karo.",
     "eraseAll": "Tirtir wax walba"
   },
-  "premium": {
-    "badge": "✦ Premium"
+  "plus": {
+    "badge": "✦ Plus"
   },
   "addHabit": {
     "newTitle": "Caado cusub",
@@ -130,17 +130,17 @@
     "hour": "Saacad (0–23)",
     "minute": "Daqiiqad (0–59)",
     "save": "Kaydi",
-    "premiumTitle": "Nur Premium",
-    "premiumBody": "Akoonnada bilaash waxay u horseedaan 3 caado. Fur Premium si aan xad lahayn."
+    "plusTitle": "Fajr Plus",
+    "plusBody": "Akoonnada bilaash waxay u horseedaan 3 caado. Fur Plus si aan xad lahayn."
   },
   "onboarding": {
-    "title": "Nur",
+    "title": "Fajr",
     "tagline": "Saaxiibkaaga maalinlaha ah nolol barakeysan",
-    "continue": "Sii wad",
+    "continue": "Hore",
     "chooseLanguage": "Dooro luqaddaada",
     "languageHint": "Waxaad beddeli kartaa Profile mar kasta.",
     "trackTitle": "La soco waxa muhiimka ah",
-    "trackBody": "Nur wuxuu kaa caawiyaa inaad Quraanka u dhowaato hadaf akhris maalinle ah iyo inaad dhisto caadooyin aad doorato.",
+    "trackBody": "Fajr wuxuu kaa caawiyaa inaad Quraanka u dhowaato hadaf akhris maalinle ah iyo inaad dhisto caadooyin aad doorato.",
     "nameQuestion": "Maxaan kuugu yeernaa?",
     "namePlaceholder": "Magacaaga",
     "getStarted": "Bilow"
@@ -150,6 +150,11 @@
     "pink": "Casaan",
     "main": "Aasaasi",
     "blue": "Buluug",
+    "red": "Cas",
+    "orange": "Liin",
+    "purple": "Buluug casaano",
+    "brown": "Bunni",
+    "gray": "Cawl madow",
     "default": "Caadiga ah"
   },
   "languageModal": {
@@ -158,7 +163,7 @@
   "devTools": {
     "title": "Qalabka horumarinta",
     "dateOverride": "Taariikh ka hortag",
-    "dateHelp": "Deji `nur_dev_date` si waqtiga app-ka loo beddelo. Fariinta nadiifi si loo joojiyo.",
+    "dateHelp": "Deji `fajr_dev_date` si waqtiga app-ka loo beddelo. Fariinta nadiifi si loo joojiyo.",
     "overrideLabel": "Taariikh (YYYY-MM-DD)",
     "overridePh": "2026-04-07",
     "apply": "Codso",
@@ -186,7 +191,7 @@
   },
   "notifications": {
     "reminderBody": "Ha jebin xiriirkaaga — taabo si aad u diiwaangeliso maanta.",
-    "channelName": "Xusuusinta Nur"
+    "channelName": "Xusuusinta Fajr"
   },
   "dates": {
     "hijri": "{{day}} {{month}} {{year}} {{ah}}",

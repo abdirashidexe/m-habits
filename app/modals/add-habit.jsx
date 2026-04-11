@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
-  Switch,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -16,9 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApp, ActionTypes } from '../../context/AppContext';
 import { Button } from '../../components/Button';
+import { ThemedSwitch } from '../../components/ThemedSwitch';
 import { Input } from '../../components/Input';
 import { DayPicker } from '../../components/DayPicker';
-import { useNurTheme } from '../../hooks/useNurTheme';
+import { useFajrTheme } from '../../hooks/useFajrTheme';
 import { createUuid } from '../../utils/uuid';
 import { scheduleHabitReminder, cancelHabitReminder } from '../../utils/notifications';
 import { nowIso } from '../../utils/now';
@@ -30,7 +30,7 @@ export default function AddHabitModal() {
   const { id } = useLocalSearchParams();
   const editId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : undefined;
   const { state, dispatch } = useApp();
-  const { colors, typography, spacing, radii } = useNurTheme();
+  const { colors, typography, spacing, radii } = useFajrTheme();
   const styles = makeStyles({ colors, spacing, radii });
 
   const existing = useMemo(
@@ -60,7 +60,7 @@ export default function AddHabitModal() {
   }, [existing]);
 
   const customCount = state.habits.filter((h) => h.type === 'custom').length;
-  const premium = state.userProfile.isPremium;
+  const plus = state.userProfile.isPlus;
 
   const close = () => router.back();
 
@@ -75,8 +75,8 @@ export default function AddHabitModal() {
     if (!trimmed) return;
     if (!freqDaily && specificDays.length === 0) return;
 
-    if (!existing && !premium && customCount >= 3) {
-      Alert.alert(t('addHabit.premiumTitle'), t('addHabit.premiumBody'), [{ text: t('common.ok') }]);
+    if (!existing && !plus && customCount >= 3) {
+      Alert.alert(t('addHabit.plusTitle'), t('addHabit.plusBody'), [{ text: t('common.ok') }]);
       return;
     }
 
@@ -92,7 +92,7 @@ export default function AddHabitModal() {
       reminderEnabled: reminderOn,
       reminderTime,
       createdAt: existing?.createdAt || nowIso(),
-      isPremium: false,
+      isPlus: false,
     };
 
     if (existing) {
@@ -166,12 +166,7 @@ export default function AddHabitModal() {
 
         <View style={styles.rowBetween}>
           <Text style={[typography.body, styles.lbl]}>{t('addHabit.reminder')}</Text>
-          <Switch
-            value={reminderOn}
-            onValueChange={setReminderOn}
-            trackColor={{ false: colors.divider, true: colors.primaryLight }}
-            thumbColor={colors.background}
-          />
+          <ThemedSwitch value={reminderOn} onValueChange={setReminderOn} />
         </View>
 
         {reminderOn ? (

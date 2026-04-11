@@ -6,14 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LANGUAGES } from '../../constants/languages';
 import { ActionTypes, useApp } from '../../context/AppContext';
-import { useNurTheme } from '../../hooks/useNurTheme';
+import { useFajrTheme } from '../../hooks/useFajrTheme';
 
 export default function LanguageModal() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, dispatch } = useApp();
-  const { colors, typography, spacing, radii } = useNurTheme();
+  const { colors, typography, spacing, radii } = useFajrTheme();
   const styles = makeStyles({ colors, spacing, radii });
   const selected = state.userProfile.language || 'en';
 

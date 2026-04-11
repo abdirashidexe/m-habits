@@ -28,11 +28,33 @@ import {
 } from '../utils/notifications';
 
 /**
+ * @param {unknown} h
+ * @returns {import('./AppReducer').Habit}
+ */
+function migrateHabitFromStorage(h) {
+  if (!h || typeof h !== 'object') return /** @type {import('./AppReducer').Habit} */ (h);
+  const out = { ...h };
+  if ('isPremium' in out && !('isPlus' in out)) {
+    out.isPlus = Boolean(out.isPremium);
+    delete out.isPremium;
+  }
+  return /** @type {import('./AppReducer').Habit} */ (out);
+}
+
+/**
  * @param {unknown} p
  * @returns {import('./AppReducer').UserProfile}
  */
 function normalizeUserProfile(p) {
-  const raw = p && typeof p === 'object' ? p : {};
+  const raw = p && typeof p === 'object' ? { ...p } : {};
+  if ('isPremium' in raw && !('isPlus' in raw)) {
+    raw.isPlus = Boolean(raw.isPremium);
+    delete raw.isPremium;
+  }
+  if ('premiumSince' in raw && !('plusSince' in raw)) {
+    raw.plusSince = raw.premiumSince;
+    delete raw.premiumSince;
+  }
   const merged = { ...defaultUserProfile, ...raw };
   merged.colorTheme = COLOR_THEME_IDS.includes(merged.colorTheme)
     ? merged.colorTheme
@@ -59,7 +81,7 @@ export function useApp() {
   return ctx;
 }
 
-function NurI18nSync() {
+function FajrI18nSync() {
   const { state } = useApp();
   const prevLangRef = useRef(null);
 
@@ -99,12 +121,13 @@ export function AppProvider({ children }) {
         ]);
       if (cancelled) return;
       const userProfile = normalizeUserProfile(userProfileRaw);
+      const habitsNorm = Array.isArray(habits) ? habits.map(migrateHabitFromStorage) : [];
       const devDateOverride = typeof devDateRaw === 'string' ? devDateRaw : null;
       setDevDateOverride(devDateOverride);
       dispatch({
         type: ActionTypes.HYDRATE,
         payload: {
-          habits,
+          habits: habitsNorm,
           habitLogs,
           userProfile,
           onboarded: onboardedRaw === 'true',
@@ -170,7 +193,7 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={value}>
-      <NurI18nSync />
+      <FajrI18nSync />
       {children}
     </AppContext.Provider>
   );

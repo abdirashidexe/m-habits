@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Easing, Platform, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useNurTheme } from '../../hooks/useNurTheme';
+import { useFajrTheme } from '../../hooks/useFajrTheme';
 // import { FaHouse, FaChartSimple, FaUser, FaRocket } from "react-icons/fa6";
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 
@@ -16,7 +16,7 @@ export default function TabsLayout() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
-  const { colors, typography } = useNurTheme();
+  const { colors, typography } = useFajrTheme();
 
   return (
     <Tabs

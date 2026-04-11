@@ -73,7 +73,7 @@ export async function scheduleHabitReminder(habit) {
       content,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        channelId: Platform.OS === 'android' ? 'nur-default' : undefined,
+        channelId: Platform.OS === 'android' ? 'fajr-default' : undefined,
         hour: t.hour,
         minute: t.minute,
       },
@@ -89,7 +89,7 @@ export async function scheduleHabitReminder(habit) {
       content,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-        channelId: Platform.OS === 'android' ? 'nur-default' : undefined,
+        channelId: Platform.OS === 'android' ? 'fajr-default' : undefined,
         weekday: toExpoWeekday(d),
         hour: t.hour,
         minute: t.minute,
@@ -135,7 +135,7 @@ export async function cancelAllLocalNotifications() {
  */
 export async function setupAndroidNotificationChannel() {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('nur-default', {
+    await Notifications.setNotificationChannelAsync('fajr-default', {
       name: i18n.t('notifications.channelName'),
       importance: Notifications.AndroidImportance.DEFAULT,
     });

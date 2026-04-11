@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextInput, View, Text, StyleSheet } from 'react-native';
-import { useNurTheme } from '../hooks/useNurTheme';
+import { useFajrTheme } from '../hooks/useFajrTheme';
 
 /**
  * @param {{
@@ -26,7 +26,7 @@ export function Input({
   style,
   inputStyle,
 }) {
-  const { colors, typography, spacing, radii } = useNurTheme();
+  const { colors, typography, spacing, radii } = useFajrTheme();
   const styles = makeStyles({ colors, typography, spacing, radii });
   return (
     <View style={[styles.wrap, style]}>

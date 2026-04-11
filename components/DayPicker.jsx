@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { useNurTheme } from '../hooks/useNurTheme';
+import { useFajrTheme } from '../hooks/useFajrTheme';
 
 /**
  * @param {{
@@ -13,7 +13,7 @@ import { useNurTheme } from '../hooks/useNurTheme';
  */
 export function DayPicker({ value, onChange }) {
   const { t } = useTranslation();
-  const { colors, typography, spacing, radii } = useNurTheme();
+  const { colors, typography, spacing, radii } = useFajrTheme();
   const styles = useMemo(() => makeStyles({ colors, spacing, radii }), [colors, spacing, radii]);
 
   const LABELS = useMemo(

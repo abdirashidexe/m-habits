@@ -5,20 +5,20 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionTypes, useApp } from '../../context/AppContext';
-import { useNurTheme } from '../../hooks/useNurTheme';
-import { getColors } from '../../theme';
+import { useFajrTheme } from '../../hooks/useFajrTheme';
+import { COLOR_THEME_IDS, getColors } from '../../theme';
 
 export default function AppColorsModal() {
   const { t } = useTranslation();
-  const OPTIONS = [
-    { id: 'pink', label: t('appColors.pink') },
-    { id: 'main', label: t('appColors.main'), center: true },
-    { id: 'blue', label: t('appColors.blue') },
-  ];
+  const OPTIONS = COLOR_THEME_IDS.map((id) => ({
+    id,
+    label: t(`appColors.${id}`),
+    defaultNote: id === 'main',
+  }));
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, dispatch } = useApp();
-  const { colors, typography, spacing, radii } = useNurTheme();
+  const { colors, typography, spacing, radii } = useFajrTheme();
   const styles = makeStyles({ colors, spacing, radii });
   const mode = state.userProfile.darkMode ? 'dark' : 'light';
   const selected = state.userProfile.colorTheme || 'main';
@@ -34,7 +34,7 @@ export default function AppColorsModal() {
       </View>
 
       <View style={styles.cardsRow}>
-        {OPTIONS.map(({ id, label, center }) => {
+        {OPTIONS.map(({ id, label, defaultNote }) => {
           const preview = getColors(mode, id);
           const isOn = selected === id;
           return (
@@ -43,7 +43,6 @@ export default function AppColorsModal() {
               onPress={() => dispatch({ type: ActionTypes.SET_COLOR_THEME, payload: id })}
               style={[
                 styles.card,
-                center ? styles.cardCenter : styles.cardSide,
                 isOn && styles.cardSelected,
                 { borderColor: isOn ? colors.primary : colors.divider },
               ]}
@@ -55,7 +54,7 @@ export default function AppColorsModal() {
               <Text style={[typography.subheading, styles.cardTitle, { color: colors.textPrimary }]}>
                 {label}
               </Text>
-              {id === 'main' ? (
+              {defaultNote ? (
                 <Text style={[typography.caption, { color: colors.textMuted }]}>
                   {t('appColors.default')}
                 </Text>
@@ -99,27 +98,24 @@ function makeStyles({ colors, spacing, radii }) {
     },
     cardsRow: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
+      flexWrap: 'wrap',
+      alignItems: 'stretch',
       justifyContent: 'center',
       gap: spacing.sm,
     },
     card: {
-      flex: 1,
+      flexGrow: 1,
+      flexBasis: '30%',
+      minWidth: 100,
+      maxWidth: 140,
+      minHeight: 132,
       borderRadius: radii.lg,
       borderWidth: 2,
       backgroundColor: colors.surface,
       padding: spacing.sm,
+      paddingVertical: spacing.md,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    cardSide: {
-      minHeight: 132,
-      paddingVertical: spacing.md,
-    },
-    cardCenter: {
-      minHeight: 156,
-      paddingVertical: spacing.md,
-      transform: [{ scale: 1.02 }],
     },
     cardSelected: {
       backgroundColor: colors.surfaceElevated,
